@@ -27,7 +27,7 @@ POPULATION = int(POPULATION_MULTIPLIER * 410)
 EPOCHS = int(POPULATION) * 200
 NDES_TRAINING = True
 
-DEVICE = torch.device("cuda:0")
+DEVICE = torch.device("cuda:1")
 BOOTSTRAP = True
 MODEL_NAME = "fashion_ndes_bootstrapped"
 LOAD_WEIGHTS = False
@@ -122,7 +122,7 @@ class Net(pl.LightningModule):
         total = len(y)
 
         loss = F.nll_loss(y_hat, y)
-        self.log("val_loss", loss)
+        # self.log("val_loss", loss)
         return {"val_loss": loss, "correct": correct, "total": total}
 
     def test_step(self, batch, batch_idx):
@@ -238,7 +238,7 @@ if __name__ == "__main__":
                 verbose=False,
                 mode="min",
             )
-            trainer = Trainer(gpus=1, callbacks=[early_stop_callback])
+            trainer = Trainer(gpus=[1], callbacks=[early_stop_callback])
             trainer.fit(model)
             trainer.test(model)
         print(f"Num params: {sum([param.nelement() for param in model.parameters()])}")
