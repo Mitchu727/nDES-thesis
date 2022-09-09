@@ -216,7 +216,6 @@ class NDES:
             ]
         )
         #  evaluation_times = []
-        self.iter_ = -1
         while self.count_eval < self.budget: # and self.iter_ < self.max_iter:
 
             hist_head = -1
@@ -290,7 +289,7 @@ class NDES:
                 tmp = new_mean - pop_mean
                 d_mean[:, hist_head] = (tmp / self.Ft).cpu()
 
-                step = ((new_mean - old_mean.cuda()) / self.Ft).cpu()
+                step = ((new_mean - old_mean) / self.Ft).cpu()
 
                 # Update parameters
                 if hist_head == 0:

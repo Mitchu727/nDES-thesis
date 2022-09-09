@@ -48,6 +48,6 @@ def parse_args():
     )
     parser.add_argument(dest="sequence_length", type=int)
     args = parser.parse_args()
-    device = torch.device(f"cuda:{args.cuda}")
+    device = torch.device(f"cuda:1")
     torch.cuda.set_device(device)
     return args.sequence_length, device

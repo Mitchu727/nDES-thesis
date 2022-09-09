@@ -23,7 +23,7 @@ import wandb
 
 #  EPOCHS = 25000
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 410)
+POPULATION = int(POPULATION_MULTIPLIER * 100)
 EPOCHS = int(POPULATION) * 200
 NDES_TRAINING = True
 
@@ -243,7 +243,6 @@ if __name__ == "__main__":
             trainer.test(model)
         print(f"Num params: {sum([param.nelement() for param in model.parameters()])}")
         torch.save({"state_dict": model.state_dict()}, "boostrap_adam.pth.tar")
-
         criterion = nn.CrossEntropyLoss()
         train_loader = MyDatasetLoader(x_train, y_train, BATCH_SIZE)
         ndes_optim = BasenDESOptimizer(
