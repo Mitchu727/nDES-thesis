@@ -22,9 +22,10 @@ from utils import seed_everything, train_via_ndes
 import wandb
 
 #  EPOCHS = 25000
+
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 410)
-EPOCHS = int(POPULATION) * 200
+POPULATION = int(POPULATION_MULTIPLIER * 200)
+EPOCHS = int(POPULATION) * 10
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")

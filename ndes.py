@@ -216,7 +216,6 @@ class NDES:
             ]
         )
         #  evaluation_times = []
-        self.iter_ = -1
         while self.count_eval < self.budget: # and self.iter_ < self.max_iter:
 
             hist_head = -1
@@ -353,7 +352,7 @@ class NDES:
                 )
                 iter_log["iter"] = self.iter_
 
-                if self.test_func is None and (fitness[wb] < self.best_fitness):
+                if self.test_func is None and fitness[wb] < self.best_fitness:
                     self.best_fitness = fitness[wb].item()
                     self.best_solution = population[:, wb]
 
