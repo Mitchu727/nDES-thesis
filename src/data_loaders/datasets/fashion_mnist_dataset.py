@@ -26,7 +26,7 @@ class FashionMNISTDataset:
             self.train_data, self.train_targets = x, y
 
     def get_train_set_targets(self):
-        return torch.ones_like(self.train_dataset.targets)
+        return torch.ones_like(self.train_dataset.targets).float()
 
     def get_train_images(self):
         return self.train_data

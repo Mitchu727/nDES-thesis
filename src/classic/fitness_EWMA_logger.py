@@ -34,7 +34,7 @@ class FitnessEWMALogger:
     def update_after_iteration(self):
         self.ewma *= 1 - self.ewma_alpha
         # calculate normal average for each batch and include it in the EWMA
-        self.ewma += self.ewma_alpha * (self.current_losses / self.current_counts)
+        self.ewma += self.ewma_alpha * (self.current_losses / self.current_counts) # w tej linijce pojawiają się NaNy
         # reset stats for the new iteration
         self.current_losses = torch.zeros(self.num_batches)
         # XXX ones to prevent 0 / 0

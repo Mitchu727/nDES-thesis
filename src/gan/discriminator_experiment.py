@@ -14,8 +14,8 @@ from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 50)
-EPOCHS = int(POPULATION) * 10
+POPULATION = int(POPULATION_MULTIPLIER * 200)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -38,7 +38,7 @@ def show_sample_predictions(discriminator, my_data_loader_batch):
     print(f"Targets: {my_data_loader_batch[1][1]}")
 
 if __name__ == "__main__":
-    seed_everything(SEED_OFFSET)
+    seed_everything(SEED_OFFSET+2)
 
     ndes_config = {
         'history': 16,
@@ -57,18 +57,20 @@ if __name__ == "__main__":
 
     criterion = nn.MSELoss()
 
-    discriminator = Discriminator(hidden_dim=256, input_dim=784).to(DEVICE)
+    discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=256, output_dim=784).to(DEVICE)
 
     fashionMNIST = FashionMNISTDataset()
-    train_data_real = FashionMNISTDataset().train_data
+    train_data_real = fashionMNIST.train_data
+    train_targets_real = fashionMNIST.get_train_set_targets()
 
     generated_fake_dataset = GeneratedFakeDataset(generator, len(train_data_real))
     train_data_fake = generated_fake_dataset.train_dataset
+    train_targets_fake = generated_fake_dataset.get_train_set_targets()
 
     train_data_merged = torch.cat([train_data_fake, train_data_real], 0)
     train_targets_merged = torch.cat(
-        [generated_fake_dataset.get_train_set_targets(), fashionMNIST.get_train_set_targets()], 0).unsqueeze(1)
+        [train_targets_fake, train_targets_real], 0).unsqueeze(1)
     train_data_merged, train_targets_merged = shuffle_dataset(train_data_merged, train_targets_merged)
     train_loader = MyDatasetLoader(
         x_train=train_data_merged.to(DEVICE),
@@ -89,10 +91,10 @@ if __name__ == "__main__":
             criterion=criterion,
             data_gen=train_loader,
             ndes_config=ndes_config,
-            use_fitness_ewma=True,
+            use_fitness_ewma=False,
             restarts=None,
             lr=0.001,
-            secondary_mutation=SecondaryMutation.Gradient,
+            secondary_mutation=None,
             lambda_=POPULATION,
             device=DEVICE,
         )
