@@ -109,6 +109,9 @@ class BasenDESOptimizer:
                 xavier_coeffs.extend([xavier_coeffs[-1]] * param_num_elements)
         return torch.tensor(xavier_coeffs)
 
+    def set_new_data_gen(self, loader):
+        self.data_gen = loader
+
     # @profile
     def _objective_function(self, weights):
         """Custom objective function for the DES optimizer."""

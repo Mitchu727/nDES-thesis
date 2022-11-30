@@ -14,7 +14,7 @@ from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 200)
+POPULATION = int(POPULATION_MULTIPLIER * 100)
 EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
@@ -38,7 +38,7 @@ def show_sample_predictions(discriminator, my_data_loader_batch):
     print(f"Targets: {my_data_loader_batch[1][1]}")
 
 if __name__ == "__main__":
-    seed_everything(SEED_OFFSET+2)
+    seed_everything(SEED_OFFSET+20)
 
     ndes_config = {
         'history': 16,
@@ -58,7 +58,9 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
-    generator = Generator(latent_dim=32, hidden_dim=256, output_dim=784).to(DEVICE)
+    discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
+    generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
+    generator.load_state_dict(torch.load("../../pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()
     train_data_real = fashionMNIST.train_data
@@ -78,6 +80,19 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE
     )
 
+    data_loader_real = MyDatasetLoader(
+        x_train=train_data_real.to(DEVICE),
+        y_train=train_targets_real.to(DEVICE),
+        batch_size=BATCH_SIZE
+    )
+
+    data_loader_fake = MyDatasetLoader(
+        x_train=train_data_fake.to(DEVICE),
+        y_train=train_targets_fake.to(DEVICE),
+        batch_size=BATCH_SIZE
+    )
+
+
     if LOAD_WEIGHTS:
         raise Exception("Not yet implemented")
 
@@ -91,10 +106,10 @@ if __name__ == "__main__":
             criterion=criterion,
             data_gen=train_loader,
             ndes_config=ndes_config,
-            use_fitness_ewma=False,
+            use_fitness_ewma=True,
             restarts=None,
-            lr=0.001,
-            secondary_mutation=None,
+            lr=0.00001,
+            secondary_mutation=SecondaryMutation.RandomNoise,
             lambda_=POPULATION,
             device=DEVICE,
         )
@@ -104,8 +119,6 @@ if __name__ == "__main__":
         train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
         show_sample_predictions(discriminator, next(iter(train_loader)))
         # print(discriminator(train_loader.get_sample_images_gpu()))
-
-
     else:
         raise Exception("Not yet implemented")
     wandb.finish()
