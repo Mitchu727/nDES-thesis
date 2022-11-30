@@ -58,8 +58,8 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
-    discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
+    discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
     generator.load_state_dict(torch.load("../../pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()

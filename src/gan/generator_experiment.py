@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
-    generator.load_state_dict(torch.load("../../pre-trained/generator"))
+    # generator.load_state_dict(torch.load("../../pre-trained/generator"))
     discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
     # generate images from generator
     ndes_config = {
@@ -54,8 +54,9 @@ if __name__ == "__main__":
     def discriminator_criterion(out, targets):
         return -discriminator(out).unsqueeze(1).sum()/out.size()[0]
 
+    # criterion = lambda out, targets: -discriminator(out).unsqueeze(1).sum()/out.size()[0]
     criterion = discriminator_criterion
-    # criterion = nn.MSELoss()
+
 
     train_generated_images_number = 100000
     train_data = get_noise_for_nn(generator.get_latent_dim(), train_generated_images_number, generator.device)
