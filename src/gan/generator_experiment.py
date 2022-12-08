@@ -87,6 +87,7 @@ if __name__ == "__main__":
     print(discriminator(generated_images.cuda()))
     print(discriminator(generated_images.cuda()).sum())# funkcja kosztu -> maksymalizacja
     show_images_from_tensor(generated_images)
+    print(generated_images[0])
 
 
 
