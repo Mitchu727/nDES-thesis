@@ -1,7 +1,7 @@
 import torch
 
 # from src.gan.gan_experiment import Generator
-# from src.data_loaders.datasource import show_images_from_tensor
+# from src.data_management.datasource import show_images_from_tensor
 # from src.gan.gan_experiment import Discriminator
 
 

@@ -13,7 +13,7 @@ from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
 from src.classic.utils import seed_everything, train_via_ndes, stratify
 
-from src.data_loaders.my_data_set_loader import MyDatasetLoader
+from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 #  EPOCHS = 25000
 # POPULATION_MULTIPLIER = 8
 # POPULATION = int(POPULATION_MULTIPLIER * 4000)

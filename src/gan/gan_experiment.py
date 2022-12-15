@@ -6,10 +6,10 @@ from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
 from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset, train_via_ndes, shuffle_dataset
 from src.classic.fashion_mnist_experiment import MyDatasetLoader
-from src.data_loaders.datasource import show_images_from_tensor
+from src.data_management.datasource import show_images_from_tensor
 
-from src.data_loaders.datasets.fashion_mnist_dataset import FashionMNISTDataset
-from src.data_loaders.datasets.generated_fake_dataset import GeneratedFakeDataset, get_noise_for_nn
+from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
+from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset, get_noise_for_nn
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
 

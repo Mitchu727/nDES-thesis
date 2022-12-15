@@ -3,8 +3,8 @@ from fashion_mnist_dataset import FashionMNISTDataset
 from src.gan.discriminator_experiment import Generator
 import torch.utils.data
 from src.classic.utils import shuffle_dataset
-from src.data_loaders.datasource import show_images_from_tensor
-from src.data_loaders.my_data_set_loader import MyDatasetLoader
+from src.data_management.datasource import show_images_from_tensor
+from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 
 
 if __name__ == "__main__":

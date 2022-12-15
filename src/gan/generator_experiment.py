@@ -4,17 +4,17 @@ import wandb
 
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
-from src.data_loaders.datasets.generated_fake_dataset import get_noise_for_nn
-from src.data_loaders.datasource import show_images_from_tensor
+from src.data_management.datasets.generated_fake_dataset import get_noise_for_nn
+from src.data_management.datasource import show_images_from_tensor
 from src.classic.ndes import SecondaryMutation
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset
-from src.data_loaders.my_data_set_loader import MyDatasetLoader
+from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 50)
-EPOCHS = int(POPULATION) * 100
+EPOCHS = int(POPULATION) * 10
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
