@@ -130,8 +130,8 @@ class NDES:
         if not fitnesses and cols == 1:
             return self.worst_fitness
         return torch.tensor(
-            # fitnesses + [self.worst_fitness] * (cols - budget_left), # FIXME uniknięcie zaburzania średniej
-            fitnesses,
+            fitnesses + [self.worst_fitness] * (cols - budget_left), # FIXME uniknięcie zaburzania średniej
+            # fitnesses,
             device=self.device,
             dtype=self.dtype,
         )
@@ -354,10 +354,11 @@ class NDES:
 
                 wb = fitness.argmin()
                 print(f"best fitness: {fitness[wb]}")
-                print(f"mean fitness: {fitness.mean()}") # FIXME - tu wcześniej był clamp
+                print(f"mean fitness: {fitness.clamp(0, self.worst_fitness).mean()}") # FIXME - tu wcześniej był clamp
                 iter_log["best_fitness"] = fitness[wb].item()
                 iter_log["mean_fitness"] = (
-                    fitness.mean().item() # FIXME - tu wcześniej był clamp
+                    fitness.clamp(0, self.worst_fitness).mean()
+                    # fitness.mean().item() # FIXME - tu wcześniej był clamp
                 )
                 iter_log["iter"] = self.iter_
 
