@@ -14,7 +14,7 @@ from src.data_loaders.my_data_set_loader import MyDatasetLoader
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 50)
-EPOCHS = int(POPULATION) * 1000
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -22,7 +22,7 @@ BOOTSTRAP = False
 MODEL_NAME = "gan_ndes_generator"
 LOAD_WEIGHTS = False
 SEED_OFFSET = 0
-BATCH_SIZE = 64
+BATCH_SIZE = 1000
 BATCH_NUM = 50
 VALIDATION_SIZE = 10000
 STRATIFY = False
@@ -56,6 +56,7 @@ if __name__ == "__main__":
 
     def discriminator_criterion(out, targets):
         return basic_criterion(discriminator(out), targets.to(DEVICE))
+        # return -discriminator(out).mean()
 
     # criterion = lambda out, targets: -discriminator(out).unsqueeze(1).sum()/out.size()[0]
     criterion = discriminator_criterion
@@ -81,7 +82,7 @@ if __name__ == "__main__":
         lambda_=POPULATION,
         device=DEVICE,
     )
-    num_of_samples = 16
+    num_of_samples = 24
     generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
     print(discriminator(generated_images.cuda()).sum())  # funkcja kosztu -> maksymalizacja
     train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)

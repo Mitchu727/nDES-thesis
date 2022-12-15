@@ -15,7 +15,7 @@ from src.gan.discriminator import Discriminator
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 100)
-EPOCHS = int(POPULATION) * 25
+EPOCHS = int(POPULATION) * 2
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -37,10 +37,11 @@ def show_sample_predictions(discriminator, my_data_loader_batch):
     print(f"Predictions: {predictions}")
     print(f"Targets: {my_data_loader_batch[1][1]}")
 
+
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET+20)
 
-    ndes_config = {
+    generator_ndes_config = {
         'history': 16,
         'worst_fitness': 3,
         'Ft': 1,
@@ -53,9 +54,23 @@ if __name__ == "__main__":
         'budget': EPOCHS,
         'device': DEVICE
     }
-    wandb.init(project=MODEL_NAME, entity="mmatak", config={**ndes_config})
+    discriminator_ndes_config = {
+        'history': 16,
+        'worst_fitness': 3,
+        'Ft': 1,
+        'ccum': 0.96,
+        # 'cp': 0.1,
+        'lower': -50.0,
+        'upper': 50.0,
+        'log_dir': "ndes_logs/",
+        'tol': 1e-6,
+        'budget': EPOCHS*10,
+        'device': DEVICE
+    }
+    wandb.init(project=MODEL_NAME, entity="mmatak", config={**discriminator_ndes_config})
 
     discriminator_criterion = nn.MSELoss()
+    basic_generator_criterion = nn.MSELoss()
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
@@ -69,7 +84,6 @@ if __name__ == "__main__":
 
     train_generated_images_number = 100000
 
-
     if LOAD_WEIGHTS:
         raise Exception("Not yet implemented")
 
@@ -78,7 +92,7 @@ if __name__ == "__main__":
             raise Exception("Not yet implemented")
         if BOOTSTRAP:
             raise Exception("Not yet implemented")
-        for _ in range (10):
+        for _ in range(10):
             generated_fake_dataset = GeneratedFakeDataset(generator, len(train_data_real))
             train_data_fake = generated_fake_dataset.train_dataset
             train_targets_fake = generated_fake_dataset.get_train_set_targets()
@@ -96,7 +110,7 @@ if __name__ == "__main__":
                 model=discriminator,
                 criterion=discriminator_criterion,
                 data_gen=train_loader,
-                ndes_config=ndes_config,
+                ndes_config=discriminator_ndes_config,
                 use_fitness_ewma=False,
                 restarts=None,
                 lr=0.00001,
@@ -109,12 +123,12 @@ if __name__ == "__main__":
             show_sample_predictions(discriminator, next(iter(train_loader)))
             generator_noise = get_noise_for_nn(generator.get_latent_dim(), train_generated_images_number, generator.device)
             generator_train_loader = MyDatasetLoader(generator_noise, torch.zeros(train_generated_images_number), BATCH_NUM)
-            generator_criterion = lambda out, targets: -discriminator(out).unsqueeze(1).sum()/out.size()[0]
+            generator_criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
             generator_ndes_optim = BasenDESOptimizer(
                 model=generator,
                 criterion=generator_criterion,
                 data_gen=generator_train_loader,
-                ndes_config=ndes_config,
+                ndes_config=generator_ndes_config,
                 use_fitness_ewma=False,
                 restarts=None,
                 lr=0.001,
