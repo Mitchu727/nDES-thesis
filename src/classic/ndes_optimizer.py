@@ -109,6 +109,9 @@ class BasenDESOptimizer:
                 xavier_coeffs.extend([xavier_coeffs[-1]] * param_num_elements)
         return torch.tensor(xavier_coeffs)
 
+    def set_new_data_gen(self, loader):
+        self.data_gen = loader
+
     # @profile
     def _objective_function(self, weights):
         """Custom objective function for the DES optimizer."""
@@ -130,7 +133,7 @@ class BasenDESOptimizer:
             out = self.model(b_x)
             loss = self.criterion(out, y)
         loss = loss.item()
-        # print(f"Loss: {loss}")
+        print(f"Loss: {loss}")
         if self.use_fitness_ewma:
             return self.ewma_logger.update_batch(batch_idx, loss)
         return loss

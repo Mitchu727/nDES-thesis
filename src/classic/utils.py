@@ -130,6 +130,7 @@ def train_via_ndes_without_test_dataset(model, ndes, device, model_name):
     model = ndes.run()
     # test(model, device, test_loader)
     torch.save({"state_dict": model.state_dict()}, f"models/{model_name}_{ndes.start}.pth.tar")
+    return model
 
 
 def train_via_gradient(
