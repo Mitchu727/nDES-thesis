@@ -85,6 +85,7 @@ if __name__ == "__main__":
     num_of_samples = 24
     generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
     print(discriminator(generated_images.cuda()).sum())  # funkcja kosztu -> maksymalizacja
+    wandb.watch(generator)
     train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
     generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
     print(discriminator(generated_images.cuda()))
