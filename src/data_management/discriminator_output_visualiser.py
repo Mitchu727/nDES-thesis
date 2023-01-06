@@ -1,6 +1,7 @@
 import torchvision
 import matplotlib.pyplot as plt
 import torch
+import torch.nn as nn
 
 from src.classic.utils import shuffle_dataset
 from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
@@ -13,12 +14,10 @@ from math import ceil
 device = torch.device("cuda:0")
 BATCH_SIZE = 64
 
-class DiscriminatorVisualiser:
-    def __init__(self):
-        self.n_row = 8
 
-    def from_images(self, images, targets, predictions):
-        columns = 10
+class DiscriminatorVisualiser:
+
+    def from_images(self, images, targets, predictions, columns=10, criterion = None):
         rows = images.size(0)//columns + 1
         fig = plt.figure(figsize=(ceil(columns*1.8), ceil(rows*2.5)))
         images = images.permute(0, 2, 3, 1)
@@ -26,15 +25,17 @@ class DiscriminatorVisualiser:
             # plt.subplot(rows, columns, i+1)
             fig.add_subplot(rows, columns, i+1)
             self.from_image(images[i], targets[i], predictions[i])
+        if criterion is not None:
+            fig.suptitle(f"Loss: {self.calculate_characteristics(criterion, targets, predictions)}")
         plt.show()
 
+    def calculate_characteristics(self, criterion, targets, predictions):
+        return criterion(targets.cpu(), predictions.cpu())
 
     def from_image(self, image, target, prediction):
         plt.imshow(image, cmap='gray', interpolation='nearest')
         plt.axis('off')
         plt.title(f"Target: {target.item()} \n Prediction: {round(prediction.item(),2)}")
-
-
 
 
 def sample_discriminator(discriminator, train_loader):
@@ -77,9 +78,11 @@ if __name__ == '__main__':
         batch_size=BATCH_SIZE
     )
 
+    criterion = nn.MSELoss()
+
     discriminator_visualiser = DiscriminatorVisualiser()
     # discriminator_visualiser.from_discriminator(discriminator, next(iter(train_loader)))
     images, predictions, targets = sample_discriminator(discriminator, train_loader)
     # show_images_from_tensor(images)
-    discriminator_visualiser.from_images(images, targets, predictions)
+    discriminator_visualiser.from_images(images, targets, predictions, 5, criterion)
     # discriminator_visualiser.load_data_for_visualization(images, predictions, targets)
