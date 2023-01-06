@@ -2,6 +2,7 @@ import torchvision
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import torchvision.transforms.transforms
 
 from src.classic.utils import shuffle_dataset
 from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
@@ -10,6 +11,7 @@ from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDat
 # from src.data_management.datasource import show_images_from_tensor
 from src.gan.discriminator import Discriminator
 from src.gan.generator import Generator
+
 from math import ceil
 device = torch.device("cuda:0")
 BATCH_SIZE = 64
@@ -51,11 +53,9 @@ class DiscriminatorVisualiser:
             print("hejka hejka")
         else:
             rows_number = images.size(0) // columns_number + 1
-        fig, axs = plt.subplots(rows_number, columns_number, figsize=(20, 20))
+        fig, axs = plt.subplots(rows_number, columns_number, figsize=(24, 24))
         current_row = 0
         current_column = 0
-        fig.suptitle("Loss: afdasfjdlksafkjdsafkld")
-
 
         for i in range(images.size(0)):
             current_axs = axs[current_row, current_column]
@@ -66,16 +66,16 @@ class DiscriminatorVisualiser:
                 current_row += 1
             else:
                 current_column += 1
+        plt.suptitle("Loss: afdasfjdlksafkjdsafkld")
         plt.tight_layout()
-        plt.subplots_adjust(top=0.95)  # simple solution better can be found fig.suptitle("Loss: afdasfjdlksafkjdsafkld")
+        plt.subplots_adjust(top=0.9)
         plt.show()
-
 
     def calculate_characteristics(self, criterion, targets, predictions):
         return criterion(targets.cpu(), predictions.cpu())
 
     def put_image(self, image, axs):
-        axs.imshow(image)
+        axs.imshow(image, cmap='gray', interpolation='nearest')
         axs.axis('off')
 
 
