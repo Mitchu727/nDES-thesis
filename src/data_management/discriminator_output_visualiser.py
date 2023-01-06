@@ -15,22 +15,69 @@ device = torch.device("cuda:0")
 BATCH_SIZE = 64
 
 
+class DiscriminatorSample:
+    def __init__(self, images, targets, predictions, criterion):
+        self.images = images
+        self.targets = targets
+        self.predictions = predictions
+        self.criterion = criterion
+        self.calculated_metrics = {}
+
+    def calculate_criterion_output(self):
+        metric_id = 'criterion_output'
+        if criterion is None:
+            raise Exception("No criterion given, cannot calculate loss")
+        self.calculated_metrics[metric_id] = self.criterion(self.images, self.criterion)
+
+
 class DiscriminatorVisualiser:
 
-    def from_images(self, images, targets, predictions, columns=10, criterion = None):
-        rows = images.size(0)//columns + 1
-        fig = plt.figure(figsize=(ceil(columns*1.8), ceil(rows*2.5)))
+    # def from_images(self, images, targets, predictions, columns=10, criterion = None):
+    #     rows = images.size(0)//columns + 1
+    #     fig = plt.figure(figsize=(ceil(columns*1.8), ceil(rows*2.5)))
+    #     images = images.permute(0, 2, 3, 1)
+    #     for i in range(images.size(0)):
+    #         # plt.subplot(rows, columns, i+1)
+    #         fig.add_subplot(rows, columns, i+1)
+    #         self.from_image(images[i], targets[i], predictions[i])
+    #     if criterion is not None:
+    #         fig.suptitle(f"Loss: {self.calculate_characteristics(criterion, targets, predictions)}")
+    #     plt.show()
+
+    def from_images(self, images, targets, predictions, columns_number=4, criterion=None):
         images = images.permute(0, 2, 3, 1)
+        if images.size(0) % columns_number == 0:
+            rows_number = int(images.size(0) / columns_number)
+            print("hejka hejka")
+        else:
+            rows_number = images.size(0) // columns_number + 1
+        fig, axs = plt.subplots(rows_number, columns_number, figsize=(20, 20))
+        current_row = 0
+        current_column = 0
+        fig.suptitle("Loss: afdasfjdlksafkjdsafkld")
+
+
         for i in range(images.size(0)):
-            # plt.subplot(rows, columns, i+1)
-            fig.add_subplot(rows, columns, i+1)
-            self.from_image(images[i], targets[i], predictions[i])
-        if criterion is not None:
-            fig.suptitle(f"Loss: {self.calculate_characteristics(criterion, targets, predictions)}")
+            current_axs = axs[current_row, current_column]
+            self.put_image(images[i], current_axs)
+            current_axs.set_title('Some very long title \n And the next line of it \n and the next one')
+            if current_column == columns_number-1:
+                current_column = 0
+                current_row += 1
+            else:
+                current_column += 1
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.95)  # simple solution better can be found fig.suptitle("Loss: afdasfjdlksafkjdsafkld")
         plt.show()
+
 
     def calculate_characteristics(self, criterion, targets, predictions):
         return criterion(targets.cpu(), predictions.cpu())
+
+    def put_image(self, image, axs):
+        axs.imshow(image)
+        axs.axis('off')
+
 
     def from_image(self, image, target, prediction):
         plt.imshow(image, cmap='gray', interpolation='nearest')
@@ -84,5 +131,5 @@ if __name__ == '__main__':
     # discriminator_visualiser.from_discriminator(discriminator, next(iter(train_loader)))
     images, predictions, targets = sample_discriminator(discriminator, train_loader)
     # show_images_from_tensor(images)
-    discriminator_visualiser.from_images(images, targets, predictions, 5, criterion)
+    discriminator_visualiser.from_images(images, targets, predictions, 8, criterion)
     # discriminator_visualiser.load_data_for_visualization(images, predictions, targets)
