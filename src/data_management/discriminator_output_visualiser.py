@@ -8,7 +8,6 @@ from src.classic.utils import shuffle_dataset
 from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
 from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset
-# from src.data_management.datasource import show_images_from_tensor
 from src.gan.discriminator import Discriminator
 from src.gan.generator import Generator
 
@@ -18,19 +17,31 @@ BATCH_SIZE = 64
 
 
 class DiscriminatorSample:
-    def __init__(self, images, targets, predictions, criterion):
+    def __init__(self, images, targets, predictions, criterion=None):
         self.images = images
         self.targets = targets
         self.predictions = predictions
         self.criterion = criterion
         self.calculated_metrics = {}
 
-    def calculate_criterion_output(self):
-        metric_id = 'criterion_output'
-        if criterion is None:
+    def calculate_criterion_metric(self):
+        metric_id = 'Criterion'
+        if self.criterion is None:
             raise Exception("No criterion given, cannot calculate loss")
-        self.calculated_metrics[metric_id] = self.criterion(self.images, self.criterion)
+        self.calculated_metrics[metric_id] = self.criterion(self.targets, self.predictions)
 
+    def calculate_mean_prediction_metric(self):
+        metric_id = 'Mean'
+        self.calculated_metrics[metric_id] = torch.mean(self.predictions)
+
+    def set_criterion(self, criterion):
+        self.criterion = criterion
+
+    def calculated_metrics_to_string(self):
+        calculated_metrcis_string = ""
+        for key in self.calculated_metrics:
+            calculated_metrcis_string += f"{key}: {self.calculated_metrics[key]} \n"
+        return calculated_metrcis_string
 
 class DiscriminatorVisualiser:
 
@@ -46,29 +57,29 @@ class DiscriminatorVisualiser:
     #         fig.suptitle(f"Loss: {self.calculate_characteristics(criterion, targets, predictions)}")
     #     plt.show()
 
-    def from_images(self, images, targets, predictions, columns_number=4, criterion=None):
-        images = images.permute(0, 2, 3, 1)
+    def from_images(self, discriminator_sample, columns_number=4, criterion=None):
+        images = discriminator_sample.images.permute(0, 2, 3, 1)
         if images.size(0) % columns_number == 0:
             rows_number = int(images.size(0) / columns_number)
             print("hejka hejka")
         else:
             rows_number = images.size(0) // columns_number + 1
-        fig, axs = plt.subplots(rows_number, columns_number, figsize=(24, 24))
+        fig, axs = plt.subplots(rows_number, columns_number, figsize=(3*columns_number, 3*rows_number))
         current_row = 0
         current_column = 0
 
         for i in range(images.size(0)):
             current_axs = axs[current_row, current_column]
             self.put_image(images[i], current_axs)
-            current_axs.set_title('Some very long title \n And the next line of it \n and the next one')
+            current_axs.set_title(f"Target: {discriminator_sample.targets[i].item()} \n Prediction: {round(discriminator_sample.predictions[i].item(),2)}")
             if current_column == columns_number-1:
                 current_column = 0
                 current_row += 1
             else:
                 current_column += 1
-        plt.suptitle("Loss: afdasfjdlksafkjdsafkld")
+        plt.suptitle(discriminator_sample.calculated_metrics_to_string())
         plt.tight_layout()
-        plt.subplots_adjust(top=0.9)
+        plt.subplots_adjust(top=0.95)
         plt.show()
 
     def calculate_characteristics(self, criterion, targets, predictions):
@@ -79,18 +90,12 @@ class DiscriminatorVisualiser:
         axs.axis('off')
 
 
-    def from_image(self, image, target, prediction):
-        plt.imshow(image, cmap='gray', interpolation='nearest')
-        plt.axis('off')
-        plt.title(f"Target: {target.item()} \n Prediction: {round(prediction.item(),2)}")
-
-
 def sample_discriminator(discriminator, train_loader):
     data_batch = next(iter(train_loader))
     images = data_batch[1][0].cpu()
     predictions = discriminator(data_batch[1][0].to(device)).cpu()
-    targets = data_batch[1][1]
-    return images, predictions, targets
+    targets = data_batch[1][1].cpu()
+    return DiscriminatorSample(images, predictions, targets)
 
 
 def show_images_from_tensor(images, n_row=8):
@@ -129,7 +134,10 @@ if __name__ == '__main__':
 
     discriminator_visualiser = DiscriminatorVisualiser()
     # discriminator_visualiser.from_discriminator(discriminator, next(iter(train_loader)))
-    images, predictions, targets = sample_discriminator(discriminator, train_loader)
+    discriminator_sample = sample_discriminator(discriminator, train_loader)
     # show_images_from_tensor(images)
-    discriminator_visualiser.from_images(images, targets, predictions, 8, criterion)
+    discriminator_sample.set_criterion(criterion)
+    discriminator_sample.calculate_criterion_metric()
+    discriminator_sample.calculate_mean_prediction_metric()
+    discriminator_visualiser.from_images(discriminator_sample, 4, criterion)
     # discriminator_visualiser.load_data_for_visualization(images, predictions, targets)
