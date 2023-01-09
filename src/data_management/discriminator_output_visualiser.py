@@ -71,7 +71,7 @@ class DiscriminatorVisualiser:
         for i in range(images.size(0)):
             current_axs = axs[current_row, current_column]
             self.put_image(images[i], current_axs)
-            current_axs.set_title(f"Target: {discriminator_sample.targets[i].item()} \n Prediction: {round(discriminator_sample.predictions[i].item(),2)}")
+            current_axs.set_title(f"Prediction: {discriminator_sample.targets[i].item():.2f} \n Target: {discriminator_sample.predictions[i].item():.2f}")
             if current_column == columns_number-1:
                 current_column = 0
                 current_row += 1
@@ -81,9 +81,6 @@ class DiscriminatorVisualiser:
         plt.tight_layout()
         plt.subplots_adjust(top=0.95)
         plt.show()
-
-    def calculate_characteristics(self, criterion, targets, predictions):
-        return criterion(targets.cpu(), predictions.cpu())
 
     def put_image(self, image, axs):
         axs.imshow(image, cmap='gray', interpolation='nearest')
