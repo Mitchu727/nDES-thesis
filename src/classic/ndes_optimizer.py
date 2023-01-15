@@ -131,9 +131,8 @@ class BasenDESOptimizer:
                 weights -= self.lr * gradient
         else:
             out = self.model(b_x)
-            loss = self.criterion(out, y)
-        loss = loss.item()
-        print(f"Loss: {loss}")
+            loss = self.criterion(out, y).item()
+        # print(f"Loss: {loss}")
         if self.use_fitness_ewma:
             return self.ewma_logger.update_batch(batch_idx, loss)
         return loss

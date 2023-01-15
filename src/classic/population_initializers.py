@@ -25,26 +25,17 @@ class XavierMVNPopulationInitializer(BasePopulationInitializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        sd_1 = torch.eye(self.lambda_, device=self.device).cpu()
-        mean_1 = (
-            torch.zeros_like(self.initial_value)
-            .unsqueeze(1)
-            .repeat(1, self.lambda_)
-            .cpu()
-        )
-        self.normal1 = MultivariateNormal(mean_1, sd_1)
-        sd_2 = torch.eye(1, device=self.device).cpu()
-        mean_2 = (
+        sd = torch.eye(1, device=self.device).cpu()
+        mean = (
             torch.zeros_like(self.initial_value)
             .unsqueeze(1)
             # .repeat(1, self.lambda_)
             .cpu()
         )
-        self.normal2 = MultivariateNormal(mean_2, sd_2)
+        self.normal = MultivariateNormal(mean, sd)
 
     def get_new_population(self, lower, upper):
-        population = self.normal1.sample().to(self.device)
-        # population = self.normal2.sample((self.lambda_,)).squeeze().T.contiguous().to(self.device)
+        population = self.normal.sample((self.lambda_,)).squeeze().T.contiguous().to(self.device)
         population *= self.xavier_coeffs[:, None]
         self.initial_value = self.initial_value.cuda()
         population += self.initial_value[:, None]

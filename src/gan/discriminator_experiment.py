@@ -15,7 +15,7 @@ from src.gan.discriminator import Discriminator
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 100)
-EPOCHS = int(POPULATION) * 100
+EPOCHS = int(POPULATION) * 50
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
