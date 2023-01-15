@@ -38,10 +38,10 @@ def show_sample_predictions(discriminator, my_data_loader_batch):
     print(f"Targets: {my_data_loader_batch[1][1]}")
 
 if __name__ == "__main__":
-    seed_everything(SEED_OFFSET+20)
+    seed_everything(SEED_OFFSET)
 
     ndes_config = {
-        'history': 16,
+        'history': 3,
         'worst_fitness': 3,
         'Ft': 1,
         'ccum': 0.96,
