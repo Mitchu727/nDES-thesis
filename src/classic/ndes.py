@@ -24,11 +24,12 @@ class NDES:
     """neural Differential Evolution Strategy (nDES) implementation."""
 
     def __init__(
-        self, initial_value, fn, lower, upper, population_initializer, **kwargs
+        self, initial_value, fn, lower, upper, population_initializer, logger, **kwargs
     ):
         self.initial_value = torch.empty_like(initial_value)
         self.initial_value.copy_(initial_value)
         self.problem_size = int(len(initial_value))
+        self.logger = logger
         self.fn = fn
         self.lower = lower
         self.upper = upper
@@ -268,7 +269,7 @@ class NDES:
             old_mean = torch.empty_like(new_mean)
             while self.count_eval < self.budget and not stoptol:
 
-                iter_log = {}
+                # iter_log = {}
                 torch.cuda.empty_cache()
                 gc.collect()
                 self.iter_ += 1
@@ -306,10 +307,13 @@ class NDES:
                         self.mu * self.cp * (2 - self.cp)
                     ) * step
 
-                print(f"|step|={(step**2).sum().item()}")
-                print(f"|pc|={(pc**2).sum().item()}")
-                iter_log["step"] = (step ** 2).sum().item()
-                iter_log["pc"] = (pc ** 2).sum().item()
+                # print(f"|step|={(step**2).sum().item()}")
+                # print(f"|pc|={(pc**2).sum().item()}")
+                # iter_log["step"] = (step ** 2).sum().item()
+                # iter_log["pc"] = (pc ** 2).sum().item()
+
+                self.logger("step_size", (step**2).sum().item())
+                self.logger("pc", (pc**2).sum().item())
 
                 # Sample from history with uniform distribution
                 diffs_cpu = self.get_diffs(hist_head, history, d_mean, pc)
@@ -353,14 +357,18 @@ class NDES:
                     )
 
                 wb = fitness.argmin()
-                print(f"best fitness: {fitness[wb]}")
-                print(f"mean fitness: {fitness.clamp(0, self.worst_fitness).mean()}") # FIXME - tu wcześniej był clamp
-                iter_log["best_fitness"] = fitness[wb].item()
-                iter_log["mean_fitness"] = (
-                    fitness.clamp(0, self.worst_fitness).mean()
-                    # fitness.mean().item() # FIXME - tu wcześniej był clamp
-                )
-                iter_log["iter"] = self.iter_
+
+                self.logger("best fitness", fitness[wb].item())
+                self.logger("mean fitness", fitness.clamp(0, self.worst_fitness).mean())
+                self.logger("iter", self.iter_)
+                # print(f"best fitness: {fitness[wb]}")
+                # print(f"mean fitness: {fitness.clamp(0, self.worst_fitness).mean()}") # FIXME - tu wcześniej był clamp
+                # iter_log["best_fitness"] = fitness[wb].item()
+                # iter_log["mean_fitness"] = (
+                #     fitness.clamp(0, self.worst_fitness).mean()
+                #     # fitness.mean().item() # FIXME - tu wcześniej był clamp
+                # )
+                # iter_log["iter"] = self.iter_
 
                 if self.test_func is None and (fitness[wb] < self.best_fitness):
                     self.best_fitness = fitness[wb].item()
@@ -382,8 +390,9 @@ class NDES:
                 )
 
                 fn_cum = self._fitness_lamarckian(cum_mean_repaired)
-                print(f"fn_cum: {fn_cum}")
-                iter_log["fn_cum"] = fn_cum
+                # print(f"fn_cum: {fn_cum}")
+                # iter_log["fn_cum"] = fn_cum
+                self.logger.iteration_log("fn_cum", fn_cum)
 
                 if self.test_func is None and fn_cum < self.best_fitness:
                     self.best_fitness = fn_cum
@@ -397,8 +406,9 @@ class NDES:
                     and self.count_eval < 0.8 * self.budget
                 ):
                     stoptol = True
-                print(f"iter={self.iter_}")
-                iter_log["best_found"] = self.best_fitness
+                # print(f"iter={self.iter_}")
+                # iter_log["best_found"] = self.best_fitness
+                self.logger.iteration_log("bets_found", self.best_fitness)
                 if self.iter_ % 50 == 0 and self.test_func is not None:
                     (test_loss, test_acc), self.best_solution = self.test_func(
                         population
@@ -406,12 +416,15 @@ class NDES:
                 else:
                     test_loss, test_acc = None, None
 
-                iter_log["test_loss"] = test_loss
-                iter_log["test_acc"] = test_acc
-                log_ = pd.concat([log_, pd.DataFrame([iter_log])], ignore_index=True)
-                if self.iter_ % 50 == 0:
-                    log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
-                wandb.log(iter_log)
+                # iter_log["test_loss"] = test_loss
+                # iter_log["test_acc"] = test_acc
+                self.logger.iteration_log("test_loss", test_loss)
+                self.logger.iteration_log("test_acc", test_acc)
+                # log_ = pd.concat([log_, pd.DataFrame([iter_log])], ignore_index=True)
+                # if self.iter_ % 50 == 0:
+                #     log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
+                # wandb.log(iter_log)
+                self.logger.end_iter()
                 if self.iter_callback:
                     self.iter_callback()
 

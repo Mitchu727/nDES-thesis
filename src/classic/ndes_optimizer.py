@@ -148,13 +148,11 @@ class BasenDESOptimizer:
             requires_grad = self.secondary_mutation == SecondaryMutation.Gradient
             for param in self.model.parameters():
                 param.requires_grad = requires_grad
-            population_initializer_kwargs = {
-                'xavier_coeffs': self.xavier_coeffs,
-                'device': self.kwargs["device"],
-                'lambda_': self.kwargs.get("lambda_", None),
-            }
             population_initializer = self.population_initializer(
-                best_value, **population_initializer_kwargs
+                initial_value=best_value,
+                xavier_coeffs=self.xavier_coeffs,
+                device=self.kwargs["device"],
+                lambda_=self.kwargs.get("lambda_", None)
             )
             if self.x_val is not None:
                 val_test_func = self.validate_and_test
@@ -185,7 +183,14 @@ class BasenDESOptimizer:
                     # gc.collect()
                     # torch.cuda.empty_cache()
             else:
-                ndes = NDES(**self.ndes_config)
+                ndes = NDES(
+                    initial_value=best_value,
+                    fn=self._objective_function,
+                    lower=self.ndes_config["lower"],
+                    upper=self.ndes_config["upper"],
+                    population_initializer=population_initializer,
+                    # TODO Logger
+                    **self.ndes_config)
                 best_value = ndes.run()
             self._reweight_model(best_value)
             return self.model
