@@ -11,8 +11,6 @@ from src.classic.utils import seconds_to_human_readable
 from src.classic.fitness_EWMA_logger import FitnessEWMALogger
 
 
-#TODO refactor działania na zbiorach
-
 class BasenDESOptimizer:
     """Base interface for the nDES optimizer for the neural networks optimization."""
 

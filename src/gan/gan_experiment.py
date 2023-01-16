@@ -4,18 +4,20 @@ import wandb
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
-from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset, train_via_ndes, shuffle_dataset
-from src.classic.fashion_mnist_experiment import MyDatasetLoader
-from src.data_management.datasource import show_images_from_tensor
+from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset
+from src.data_management.dataloaders.for_generator_dataloader import ForGeneratorDataloader
 
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
 from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset, get_noise_for_nn
+from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
+from src.data_management.output.generator_output import GeneratorOutputManager, GeneratorSample
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
+from src.gan.utils import create_merged_dataloader
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 100)
-EPOCHS = int(POPULATION) * 2
+POPULATION = int(POPULATION_MULTIPLIER * 1000)
+EPOCHS = int(POPULATION) * 50
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -29,20 +31,11 @@ VALIDATION_SIZE = 10000
 STRATIFY = False
 
 
-def show_sample_predictions(discriminator, my_data_loader_batch):
-    # TODO to można podzielić na funkcje
-    show_images_from_tensor(my_data_loader_batch[1][0].cpu())
-    predictions = discriminator(my_data_loader_batch[1][0].to(DEVICE)).cpu()
-    print(f"Loss: {discriminator_criterion(predictions.cuda(), my_data_loader_batch[1][1].cuda())}")
-    print(f"Predictions: {predictions}")
-    print(f"Targets: {my_data_loader_batch[1][1]}")
-
-
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET+20)
 
     generator_ndes_config = {
-        'history': 16,
+        'history': 3,
         'worst_fitness': 3,
         'Ft': 1,
         'ccum': 0.96,
@@ -55,7 +48,7 @@ if __name__ == "__main__":
         'device': DEVICE
     }
     discriminator_ndes_config = {
-        'history': 16,
+        'history': 3,
         'worst_fitness': 3,
         'Ft': 1,
         'ccum': 0.96,
@@ -64,7 +57,7 @@ if __name__ == "__main__":
         'upper': 50.0,
         'log_dir': "ndes_logs/",
         'tol': 1e-6,
-        'budget': EPOCHS*10,
+        'budget': EPOCHS,
         'device': DEVICE
     }
     wandb.init(project=MODEL_NAME, entity="mmatak", config={**discriminator_ndes_config})
@@ -75,12 +68,14 @@ if __name__ == "__main__":
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
 
-    # discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
-    # generator.load_state_dict(torch.load("../../pre-trained/generator"))
+    discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
+    generator.load_state_dict(torch.load("../../pre-trained/generator"))
+
+    discriminator_output_manager = DiscriminatorOutputManager(discriminator_criterion)
+    generator_output_manager = GeneratorOutputManager()
 
     fashionMNIST = FashionMNISTDataset()
-    train_data_real = fashionMNIST.train_data
-    train_targets_real = fashionMNIST.get_train_set_targets()
+    number_of_samples = fashionMNIST.get_number_of_samples()
 
     train_generated_images_number = 100000
 
@@ -93,23 +88,16 @@ if __name__ == "__main__":
         if BOOTSTRAP:
             raise Exception("Not yet implemented")
         for _ in range(10):
-            generated_fake_dataset = GeneratedFakeDataset(generator, len(train_data_real))
-            train_data_fake = generated_fake_dataset.train_dataset
-            train_targets_fake = generated_fake_dataset.get_train_set_targets()
+            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples)
+            discriminator_data_loader = create_merged_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
 
-            train_data_merged = torch.cat([train_data_fake, train_data_real], 0)
-            train_targets_merged = torch.cat(
-                [train_targets_fake, train_targets_real], 0).unsqueeze(1)
-            train_data_merged, train_targets_merged = shuffle_dataset(train_data_merged, train_targets_merged)
-            train_loader = MyDatasetLoader(
-                x_train=train_data_merged.to(DEVICE),
-                y_train=train_targets_merged.to(DEVICE),
-                batch_size=BATCH_SIZE
-            )
+            discriminator_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_data_loader)
+            discriminator_output_manager.visualise(discriminator_sample)
+
             discriminator_ndes_optim = BasenDESOptimizer(
                 model=discriminator,
                 criterion=discriminator_criterion,
-                data_gen=train_loader,
+                data_gen=discriminator_data_loader,
                 ndes_config=discriminator_ndes_config,
                 use_fitness_ewma=False,
                 restarts=None,
@@ -118,12 +106,17 @@ if __name__ == "__main__":
                 lambda_=POPULATION,
                 device=DEVICE,
             )
-
             discriminator = train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
-            show_sample_predictions(discriminator, next(iter(train_loader)))
-            generator_noise = get_noise_for_nn(generator.get_latent_dim(), train_generated_images_number, generator.device)
-            generator_train_loader = MyDatasetLoader(generator_noise, torch.zeros(train_generated_images_number), BATCH_NUM)
+
+            discriminator_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_data_loader)
+            discriminator_output_manager.visualise(discriminator_sample)
+
+            generator_train_loader = ForGeneratorDataloader.for_generator(generator, train_generated_images_number, BATCH_NUM)
             generator_criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
+
+            generator_sample = GeneratorSample.sample_from_generator(generator, discriminator, 64)
+            generator_output_manager.visualise(generator_sample)
+
             generator_ndes_optim = BasenDESOptimizer(
                 model=generator,
                 criterion=generator_criterion,
@@ -137,11 +130,9 @@ if __name__ == "__main__":
                 device=DEVICE,
             )
             generator = train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
-            generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), 16, generator.device)).detach().cpu()
-            show_images_from_tensor(generated_images)
-        # train_via_ndes(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
-        # print(discriminator(train_loader.get_sample_images_gpu()))
-        # print(discriminator(train_loader.get_sample_images_gpu()))
+
+            generator_sample = GeneratorSample.sample_from_generator(generator, discriminator, 64)
+            generator_output_manager.visualise(generator_sample)
     else:
         raise Exception("Not yet implemented")
     wandb.finish()

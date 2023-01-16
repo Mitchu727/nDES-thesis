@@ -7,6 +7,16 @@ from src.classic.utils import bounce_back_boundary_2d
 
 class BasePopulationInitializer(ABC):
     def __init__(self, initial_value, xavier_coeffs, device, lambda_=None):
+        # sd = torch.eye(self.lambda_, device=self.device).cpu()
+        # mean = (
+        #     torch.zeros_like(self.initial_value)
+        #     .unsqueeze(1)
+        #     .repeat(1, self.lambda_)
+        #     .cpu()
+        # )
+        # self.normal = MultivariateNormal(mean, sd)
+
+
         self.initial_value = initial_value
         self.xavier_coeffs = xavier_coeffs.to(device)
         self.device = device
@@ -35,6 +45,7 @@ class XavierMVNPopulationInitializer(BasePopulationInitializer):
         self.normal = MultivariateNormal(mean, sd)
 
     def get_new_population(self, lower, upper):
+        # population = self.normal.sample().to(self.device)
         population = self.normal.sample((self.lambda_,)).squeeze().T.contiguous().to(self.device)
         population *= self.xavier_coeffs[:, None]
         self.initial_value = self.initial_value.cuda()

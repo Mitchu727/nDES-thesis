@@ -2,19 +2,18 @@ import torch.utils.data
 import torch.nn as nn
 import wandb
 
+from src.data_management.dataloaders.for_generator_dataloader import ForGeneratorDataloader
+from src.data_management.output.generator_output import GeneratorOutputManager, GeneratorSample
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
-from src.data_management.datasets.generated_fake_dataset import get_noise_for_nn
-from src.data_management.datasource import show_images_from_tensor
 from src.classic.ndes import SecondaryMutation
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset
-from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 50)
-EPOCHS = int(POPULATION) * 10
+POPULATION = int(POPULATION_MULTIPLIER * 1000)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -30,6 +29,7 @@ STRATIFY = False
 
 if __name__ == "__main__":
     seed_everything(0)
+    generator_output_manager = GeneratorOutputManager()
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
@@ -52,23 +52,15 @@ if __name__ == "__main__":
 
     wandb.init(project=MODEL_NAME, entity="mmatak", config={**ndes_config})
 
-    basic_criterion = nn.MSELoss()
 
     def discriminator_criterion(out, targets):
+        basic_criterion = nn.MSELoss()
         return basic_criterion(discriminator(out), targets.to(DEVICE))
-        # return -discriminator(out).mean()
 
     # criterion = lambda out, targets: -discriminator(out).unsqueeze(1).sum()/out.size()[0]
     criterion = discriminator_criterion
 
-    train_generated_images_number = 100000
-    train_data = get_noise_for_nn(generator.get_latent_dim(), train_generated_images_number, generator.device)
-    train_targets = torch.ones(train_generated_images_number)
-
-    # 2 wersje
-    # wersja no. 1 - low effort -> wsadzić dyskryminator w kryterium, byle co w targets
-    # wersja no. 2 - głębiej wejść w kod i porefactorować
-    train_loader = MyDatasetLoader(train_data, train_targets, BATCH_NUM)
+    train_loader = ForGeneratorDataloader.for_generator(generator, BATCH_NUM, 60000)
 
     generator_ndes_optim = BasenDESOptimizer(
         model=generator,
@@ -82,16 +74,12 @@ if __name__ == "__main__":
         lambda_=POPULATION,
         device=DEVICE,
     )
-    num_of_samples = 24
-    generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
-    print(discriminator(generated_images.cuda()).sum())  # funkcja kosztu -> maksymalizacja
-    wandb.watch(generator)
+
+    sample_1 = GeneratorSample.sample_from_generator(generator, discriminator, 64)
+    generator_output_manager.visualise(sample_1)
     train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
-    generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
-    print(discriminator(generated_images.cuda()))
-    print(discriminator(generated_images.cuda()).sum())# funkcja kosztu -> maksymalizacja -> już nie
-    print(discriminator(generated_images.cuda()).mean())# funkcja kosztu -> maksymalizacja
-    show_images_from_tensor(generated_images)
+    sample_2 = GeneratorSample.sample_from_generator(generator, discriminator, 64)
+    generator_output_manager.visualise(sample_2)
 
 
 

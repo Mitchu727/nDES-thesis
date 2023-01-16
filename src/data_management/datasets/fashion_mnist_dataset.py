@@ -30,3 +30,6 @@ class FashionMNISTDataset:
 
     def get_train_images(self):
         return self.train_data
+
+    def get_number_of_samples(self):
+        return len(self.train_data)

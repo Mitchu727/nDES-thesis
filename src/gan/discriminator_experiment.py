@@ -4,18 +4,18 @@ import wandb
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
-from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset, train_via_ndes, shuffle_dataset
-from src.classic.fashion_mnist_experiment import MyDatasetLoader
-from src.data_management.datasource import show_images_from_tensor
+from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset
 
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
 from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset
+from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
+from src.gan.utils import create_merged_dataloader
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 100)
-EPOCHS = int(POPULATION) * 50
+POPULATION = int(POPULATION_MULTIPLIER * 5000)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -28,14 +28,6 @@ BATCH_NUM = 50
 VALIDATION_SIZE = 10000
 STRATIFY = False
 
-
-def show_sample_predictions(discriminator, my_data_loader_batch):
-    # TODO to można podzielić na funkcje
-    show_images_from_tensor(my_data_loader_batch[1][0].cpu())
-    predictions = discriminator(my_data_loader_batch[1][0].to(DEVICE)).cpu()
-    print(f"Loss: {criterion(predictions.cuda(), my_data_loader_batch[1][1].cuda())}")
-    print(f"Predictions: {predictions}")
-    print(f"Targets: {my_data_loader_batch[1][1]}")
 
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET)
@@ -63,35 +55,11 @@ if __name__ == "__main__":
     generator.load_state_dict(torch.load("../../pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()
-    train_data_real = fashionMNIST.train_data
-    train_targets_real = fashionMNIST.get_train_set_targets()
+    generated_fake_dataset = GeneratedFakeDataset(generator, 60000)
 
-    generated_fake_dataset = GeneratedFakeDataset(generator, len(train_data_real))
-    train_data_fake = generated_fake_dataset.train_dataset
-    train_targets_fake = generated_fake_dataset.get_train_set_targets()
+    train_loader = create_merged_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
 
-    train_data_merged = torch.cat([train_data_fake, train_data_real], 0)
-    train_targets_merged = torch.cat(
-        [train_targets_fake, train_targets_real], 0).unsqueeze(1)
-    train_data_merged, train_targets_merged = shuffle_dataset(train_data_merged, train_targets_merged)
-    train_loader = MyDatasetLoader(
-        x_train=train_data_merged.to(DEVICE),
-        y_train=train_targets_merged.to(DEVICE),
-        batch_size=BATCH_SIZE
-    )
-
-    data_loader_real = MyDatasetLoader(
-        x_train=train_data_real.to(DEVICE),
-        y_train=train_targets_real.to(DEVICE),
-        batch_size=BATCH_SIZE
-    )
-
-    data_loader_fake = MyDatasetLoader(
-        x_train=train_data_fake.to(DEVICE),
-        y_train=train_targets_fake.to(DEVICE),
-        batch_size=BATCH_SIZE
-    )
-
+    discriminator_output_manager = DiscriminatorOutputManager(criterion)
 
     if LOAD_WEIGHTS:
         raise Exception("Not yet implemented")
@@ -113,12 +81,11 @@ if __name__ == "__main__":
             lambda_=POPULATION,
             device=DEVICE,
         )
-        # train_via_ndes(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
-        # print(discriminator(train_loader.get_sample_images_gpu()))
-        show_sample_predictions(discriminator, next(iter(train_loader)))
+        sample_1 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
+        discriminator_output_manager.visualise(sample_1)
         train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
-        show_sample_predictions(discriminator, next(iter(train_loader)))
-        # print(discriminator(train_loader.get_sample_images_gpu()))
+        sample_2 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
+        discriminator_output_manager.visualise(sample_2)
     else:
         raise Exception("Not yet implemented")
     wandb.finish()

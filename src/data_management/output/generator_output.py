@@ -1,8 +1,6 @@
 import torch
 
 from src.data_management.datasets.generated_fake_dataset import get_noise_for_nn
-from src.gan.discriminator import Discriminator
-from src.gan.generator import Generator
 import matplotlib.pyplot as plt
 
 
