@@ -8,7 +8,6 @@ from timeit import default_timer as timer
 import numpy as np
 import pandas as pd
 import torch
-import wandb
 
 from gpu_utils import create_sorted_weights_for_matmul, fitness_nonlamarckian
 from src.classic.utils import bounce_back_boundary_1d, bounce_back_boundary_2d, create_directory
@@ -33,7 +32,6 @@ class NDES:
         self.fn = fn
         self.lower = lower
         self.upper = upper
-
         self.device = kwargs.get("device", torch.device("cpu"))
         self.dtype = kwargs.get("dtype", torch.float32)
         self.population_initializer = population_initializer
@@ -98,9 +96,15 @@ class NDES:
         self.start = timer()
         self.test_func = kwargs.get("test_func", None)
         self.iter_callback = kwargs.get("iter_callback", None)
-        self.log_dir = kwargs.get("log_dir", "../..")
-        create_directory(self.log_dir)
         self.secondary_mutation = kwargs.get("secondary_mutation", None)
+        self.logger.log_conf_kwargs(kwargs)
+        self.log_config()
+
+    def log_config(self):
+        self.logger.log_conf("start", self.start)
+        self.logger.log_conf("lower", self.lower)
+        self.logger.log_conf("upper", self.upper)
+        self.logger.log_conf("problem_size", self.problem_size)
 
     # @profile
     def _fitness_wrapper(self, x):
@@ -190,6 +194,7 @@ class NDES:
         assert (self.lower < self.upper).all()
 
         print(f"Running nDES for a problem of size {self.problem_size}")
+        self.logger.start_training()
 
         # The best fitness found so far
         self.best_fitness = self.worst_fitness #jakie jest w takim wypadku solution dla best_fitness, program wybucha
@@ -206,18 +211,20 @@ class NDES:
         )
 
         sorted_weights = torch.zeros_like(self.weights_pop)
+        #
+        # log_ = pd.DataFrame(
+        #     columns=[
+        #         "step",
+        #         "pc",
+        #         "mean_fitness",
+        #         "best_fitness",
+        #         "fn_cum",
+        #         "best_found",
+        #         "iter",
+        #     ]
+        # )
 
-        log_ = pd.DataFrame(
-            columns=[
-                "step",
-                "pc",
-                "mean_fitness",
-                "best_fitness",
-                "fn_cum",
-                "best_found",
-                "iter",
-            ]
-        )
+
         #  evaluation_times = []
         # self.iter_ = -1
         while self.count_eval < self.budget:  # and self.iter_ < self.max_iter:
@@ -307,13 +314,8 @@ class NDES:
                         self.mu * self.cp * (2 - self.cp)
                     ) * step
 
-                # print(f"|step|={(step**2).sum().item()}")
-                # print(f"|pc|={(pc**2).sum().item()}")
-                # iter_log["step"] = (step ** 2).sum().item()
-                # iter_log["pc"] = (pc ** 2).sum().item()
-
-                self.logger("step_size", (step**2).sum().item())
-                self.logger("pc", (pc**2).sum().item())
+                self.logger.log_iter("step_size", (step**2).sum().item())
+                self.logger.log_iter("pc", (pc**2).sum().item())
 
                 # Sample from history with uniform distribution
                 diffs_cpu = self.get_diffs(hist_head, history, d_mean, pc)
@@ -358,17 +360,10 @@ class NDES:
 
                 wb = fitness.argmin()
 
-                self.logger("best fitness", fitness[wb].item())
-                self.logger("mean fitness", fitness.clamp(0, self.worst_fitness).mean())
-                self.logger("iter", self.iter_)
-                # print(f"best fitness: {fitness[wb]}")
-                # print(f"mean fitness: {fitness.clamp(0, self.worst_fitness).mean()}") # FIXME - tu wcześniej był clamp
-                # iter_log["best_fitness"] = fitness[wb].item()
-                # iter_log["mean_fitness"] = (
-                #     fitness.clamp(0, self.worst_fitness).mean()
-                #     # fitness.mean().item() # FIXME - tu wcześniej był clamp
-                # )
-                # iter_log["iter"] = self.iter_
+                # self.logger.log_fitness(fitness) # WARNING - costly function when used on large populations
+                self.logger.log_iter("best fitness", fitness[wb].item())
+                self.logger.log_iter("mean fitness", fitness.clamp(0, self.worst_fitness).mean().item())
+                self.logger.log_iter("iter", self.iter_)
 
                 if self.test_func is None and (fitness[wb] < self.best_fitness):
                     self.best_fitness = fitness[wb].item()
@@ -390,9 +385,7 @@ class NDES:
                 )
 
                 fn_cum = self._fitness_lamarckian(cum_mean_repaired)
-                # print(f"fn_cum: {fn_cum}")
-                # iter_log["fn_cum"] = fn_cum
-                self.logger.iteration_log("fn_cum", fn_cum)
+                self.logger.log_iter("fn_cum", fn_cum)
 
                 if self.test_func is None and fn_cum < self.best_fitness:
                     self.best_fitness = fn_cum
@@ -408,7 +401,7 @@ class NDES:
                     stoptol = True
                 # print(f"iter={self.iter_}")
                 # iter_log["best_found"] = self.best_fitness
-                self.logger.iteration_log("bets_found", self.best_fitness)
+                self.logger.log_iter("best_found", self.best_fitness)
                 if self.iter_ % 50 == 0 and self.test_func is not None:
                     (test_loss, test_acc), self.best_solution = self.test_func(
                         population
@@ -418,8 +411,8 @@ class NDES:
 
                 # iter_log["test_loss"] = test_loss
                 # iter_log["test_acc"] = test_acc
-                self.logger.iteration_log("test_loss", test_loss)
-                self.logger.iteration_log("test_acc", test_acc)
+                # self.logger.log_iter("test_loss", test_loss)
+                # self.logger.log_iter("test_acc", test_acc)
                 # log_ = pd.concat([log_, pd.DataFrame([iter_log])], ignore_index=True)
                 # if self.iter_ % 50 == 0:
                 #     log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
@@ -428,6 +421,8 @@ class NDES:
                 if self.iter_callback:
                     self.iter_callback()
 
-        log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
+        self.logger.end_training()
+
+        # log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
         #  np.save(f"times_{self.problem_size}.npy", np.array(evaluation_times))
         return self.best_solution  # , log_

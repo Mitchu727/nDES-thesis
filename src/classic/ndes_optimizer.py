@@ -20,6 +20,7 @@ class BasenDESOptimizer:
         criterion,
         data_gen,
         ndes_config,
+        logger,
         x_val=None,
         y_val=None,
         use_fitness_ewma=False,
@@ -47,6 +48,7 @@ class BasenDESOptimizer:
         self.ndes_config = ndes_config
         self.population_initializer = population_initializer
         self.data_gen = data_gen
+        self.logger = logger
         self.x_val = x_val
         self.y_val = y_val
         self.use_fitness_ewma = use_fitness_ewma
@@ -62,6 +64,16 @@ class BasenDESOptimizer:
         if use_fitness_ewma:
             self.ewma_logger = FitnessEWMALogger(data_gen, model, criterion)
             self.ndes_config["iter_callback"] = self.ewma_logger.update_after_iteration
+        self.logger.log_conf_kwargs(kwargs)
+        self.log_config()
+
+
+    def log_config(self):
+        self.logger.log_conf("criterion", self.criterion)
+        self.logger.log_conf("secondary_mutation", self.secondary_mutation)
+        self.logger.log_conf("use_fitness_ewma", self.use_fitness_ewma)
+        self.logger.log_conf("population_initializer", self.population_initializer)
+        self.logger.log_conf("lr", self.lr)
 
     def zip_layers(self, layers_iter):
         """Concatenate flattened layers into a single 1-D tensor.
@@ -159,10 +171,10 @@ class BasenDESOptimizer:
             else:
                 val_test_func = None
             determined_config = {
-                'initial_value': best_value,
-                'fn': self._objective_function,
+                # 'initial_value': best_value,
+                # 'fn': self._objective_function,
                 'xavier_coeffs': self.xavier_coeffs,
-                'population_initializer': population_initializer,
+                # 'population_initializer': population_initializer,
                 'test_func': val_test_func,
                 'secondary_mutation': self.secondary_mutation,
                 'lambda_': self.kwargs.get("lambda_")
@@ -186,10 +198,10 @@ class BasenDESOptimizer:
                 ndes = NDES(
                     initial_value=best_value,
                     fn=self._objective_function,
-                    lower=self.ndes_config["lower"],
-                    upper=self.ndes_config["upper"],
+                    # lower=self.ndes_config["lower"],
+                    # upper=self.ndes_config["upper"],
                     population_initializer=population_initializer,
-                    # TODO Logger
+                    logger=self.logger,
                     **self.ndes_config)
                 best_value = ndes.run()
             self._reweight_model(best_value)
