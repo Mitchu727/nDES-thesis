@@ -97,6 +97,7 @@ if __name__ == "__main__":
     sample_2 = DiscriminatorSample.from_discriminator_and_loader(discriminator, merged_test_loader)
     logger.log_discriminator_sample(sample_2, "begin")
     discriminator_output_manager.visualise(sample_2, logger.dir + "/discriminator_end.png")
+    logger.end_training()
 
 
 

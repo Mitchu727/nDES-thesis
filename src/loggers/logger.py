@@ -62,7 +62,7 @@ class Logger:
     def log_generator_sample(self, generator_sample, description):
         struct_to_save = {
             'images': generator_sample.images,
-            'outputs': generator_sample.outputs
+            'outputs': generator_sample.discriminator_outputs
         }
         torch.save(struct_to_save, f"{self.dir}/generator_{description}.pt")
 

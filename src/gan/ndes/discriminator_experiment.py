@@ -15,7 +15,7 @@ from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 10)
-EPOCHS = int(POPULATION) * 100
+EPOCHS = int(POPULATION) * 10
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -34,7 +34,7 @@ FAKE_DATASET_SIZE = 60000
 
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET)
-    logger = Logger("../ndes_logs/", MODEL_NAME)
+    logger = Logger("ndes_logs/", MODEL_NAME)
     logger.log_conf("DEVICE", DEVICE)
     logger.log_conf("SEED_OFFSET", SEED_OFFSET)
     logger.log_conf("BATCH_SIZE", BATCH_SIZE)
