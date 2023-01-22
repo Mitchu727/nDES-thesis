@@ -8,8 +8,8 @@ import numpy as np
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
 from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset
 from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
-from src.gan.discriminator import Discriminator
-from src.gan.generator import Generator
+from src.gan.networks.discriminator import Discriminator
+from src.gan.networks.generator import Generator
 from src.gan.utils import create_merged_test_dataloader
 from src.loggers.logger import Logger
 
@@ -20,7 +20,7 @@ MODEL_NAME = "gan_adam_discriminator"
 
 
 if __name__ == "__main__":
-    logger = Logger("ndes_logs/", MODEL_NAME, "adam")
+    logger = Logger("adam_logs/", MODEL_NAME, "adam")
     logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
 

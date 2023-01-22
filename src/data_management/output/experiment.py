@@ -8,8 +8,8 @@ from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDat
 from src.data_management.output.discriminator_output import DiscriminatorOutputManager, DiscriminatorSample
 from src.data_management.output.generator_output import GeneratorSample, GeneratorOutputManager
 
-from src.gan.discriminator import Discriminator
-from src.gan.generator import Generator
+from src.gan.networks.discriminator import Discriminator
+from src.gan.networks.generator import Generator
 
 if __name__ == '__main__':
     device = torch.device("cuda:0")

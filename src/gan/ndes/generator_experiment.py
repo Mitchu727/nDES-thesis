@@ -4,8 +4,8 @@ import wandb
 
 from src.data_management.dataloaders.for_generator_dataloader import ForGeneratorDataloader
 from src.data_management.output.generator_output import GeneratorOutputManager, GeneratorSample
-from src.gan.generator import Generator
-from src.gan.discriminator import Discriminator
+from src.gan.networks.generator import Generator
+from src.gan.networks.discriminator import Discriminator
 from src.classic.ndes import SecondaryMutation
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.utils import seed_everything, train_via_ndes_without_test_dataset

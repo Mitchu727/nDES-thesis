@@ -8,11 +8,11 @@ from src.classic.utils import seed_everything, train_via_ndes_without_test_datas
 from src.data_management.dataloaders.for_generator_dataloader import ForGeneratorDataloader
 
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
-from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset, get_noise_for_nn
+from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset
 from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
 from src.data_management.output.generator_output import GeneratorOutputManager, GeneratorSample
-from src.gan.generator import Generator
-from src.gan.discriminator import Discriminator
+from src.gan.networks.generator import Generator
+from src.gan.networks.discriminator import Discriminator
 from src.gan.utils import create_merged_train_dataloader
 
 POPULATION_MULTIPLIER = 1

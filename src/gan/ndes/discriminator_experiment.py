@@ -8,8 +8,8 @@ from src.classic.utils import seed_everything, train_via_ndes_without_test_datas
 from src.data_management.datasets.fashion_mnist_dataset import FashionMNISTDataset
 from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDataset
 from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
-from src.gan.generator import Generator
-from src.gan.discriminator import Discriminator
+from src.gan.networks.generator import Generator
+from src.gan.networks.discriminator import Discriminator
 from src.gan.utils import create_merged_train_dataloader
 from src.loggers.logger import Logger
 
@@ -34,7 +34,7 @@ FAKE_DATASET_SIZE = 60000
 
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET)
-    logger = Logger("ndes_logs/", MODEL_NAME)
+    logger = Logger("../ndes_logs/", MODEL_NAME)
     logger.log_conf("DEVICE", DEVICE)
     logger.log_conf("SEED_OFFSET", SEED_OFFSET)
     logger.log_conf("BATCH_SIZE", BATCH_SIZE)
@@ -65,12 +65,12 @@ if __name__ == "__main__":
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
     if PRE_TRAINED_DISCRIMINATOR:
-        discriminator.load_state_dict(torch.load("../../pre-trained/discriminator"))
+        discriminator.load_state_dict(torch.load("../../../pre-trained/discriminator"))
     if PRE_TRAINED_GENERATOR:
-        generator.load_state_dict(torch.load("../../pre-trained/generator"))
+        generator.load_state_dict(torch.load("../../../pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()
-    generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE)
+    generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE, 0)
 
     train_loader = create_merged_train_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
 
