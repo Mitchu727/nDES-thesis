@@ -16,19 +16,19 @@ class BasenDESOptimizer:
 
     def __init__(
         self,
-        model,
-        criterion,
-        data_gen,
-        ndes_config,
-        logger,
-        x_val=None,
-        y_val=None,
-        use_fitness_ewma=False,
-        population_initializer=XavierMVNPopulationInitializer,
-        restarts=None,
-        lr=1e-3,
-        **kwargs,
-    ):
+            model: object,
+            criterion: object,
+            data_gen: object,
+            ndes_config: object,
+            logger: object,
+            x_val: object = None,
+            y_val: object = None,
+            use_fitness_ewma: object = False,
+            population_initializer: object = XavierMVNPopulationInitializer,
+            restarts: object = None,
+            lr: object = 1e-3,
+            **kwargs: object,
+    ) -> object:
         """
         Args:
             model: ``pytorch``'s model

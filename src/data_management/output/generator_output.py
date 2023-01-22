@@ -9,11 +9,12 @@ class GeneratorOutputManager:
         self.metrics_manager = GeneratorMetricsManager()
         self.visualiser = GeneratorVisualiser()
 
-    def visualise(self, generator_sample):
+    def visualise(self, generator_sample, path_to_save):
         self.calculate_metrics(generator_sample)
         self.visualiser.from_images_and_metrics(
             generator_sample=generator_sample,
-            metrics=self.metrics_manager.calculated_metrics
+            metrics=self.metrics_manager.calculated_metrics,
+            path_to_save=path_to_save
         )
 
     def calculate_metrics(self, discriminator_sample):
@@ -62,7 +63,7 @@ class GeneratorSample:
 
 
 class GeneratorVisualiser:
-    def from_images_and_metrics(self, generator_sample, metrics, columns_number=4):
+    def from_images_and_metrics(self, generator_sample, metrics, path_to_save, columns_number=4):
         images = generator_sample.images.permute(0, 2, 3, 1)
         if images.size(0) % columns_number == 0:
             rows_number = int(images.size(0) / columns_number)
@@ -84,6 +85,7 @@ class GeneratorVisualiser:
         plt.suptitle(GeneratorMetricsManager.calculated_metrics_to_string(metrics))
         plt.tight_layout()
         plt.subplots_adjust(top=0.90)
+        plt.savefig(path_to_save)
         plt.show()
 
     @staticmethod

@@ -24,6 +24,9 @@ class Logger:
     def start_training(self):
         wandb.init(project=self.model_name, entity="mmatak", config={**self._config_log})
 
+    def update_config(self):
+        wandb.config.update({**self._config_log}, allow_val_change=True)
+
     def end_training(self):
         self.save_to_files()
         wandb.finish()
@@ -68,10 +71,10 @@ class Logger:
 
     def print_iter_log(self):
         print(f"======= Iteration: {self._iteration_log['iter']} =======")
-        print(f"Step size: {self._iteration_log['step_size']}")
+        print(f"Step size: {self._iteration_log['step']}")
         print(f"Pc: {self._iteration_log['pc']}")
-        print(f"Best fitness: {self._iteration_log['best fitness']}")
-        print(f"Mean fitness: {self._iteration_log['mean fitness']}")
+        print(f"Best fitness: {self._iteration_log['best_fitness']}")
+        print(f"Mean fitness: {self._iteration_log['mean_fitness']}")
         print(f"Cumulative function value: {self._iteration_log['fn_cum']}")
         print(f"Best found: {self._iteration_log['best_found']}")
 

@@ -74,6 +74,7 @@ if __name__ == "__main__":
     train_loader = ForGeneratorDataloader.for_generator(generator, BATCH_NUM, 60000)
     # test_loader = ForGeneratorDataloader.for_generator(generator, BATCH_NUM, 10000)
 
+    logger.start_training()
     generator_ndes_optim = BasenDESOptimizer(
         model=generator,
         criterion=criterion,

@@ -10,7 +10,7 @@ from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDat
 from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
 from src.gan.networks.generator import Generator
 from src.gan.networks.discriminator import Discriminator
-from src.gan.utils import create_merged_train_dataloader
+from src.gan.utils import create_merged_train_dataloader, create_merged_test_dataloader
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
@@ -70,12 +70,14 @@ if __name__ == "__main__":
         generator.load_state_dict(torch.load("../../../pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()
-    generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE, 0)
+    generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE, 10000)
 
     train_loader = create_merged_train_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
+    test_loader = create_merged_test_dataloader(fashionMNIST, generated_fake_dataset, 32, DEVICE)
 
     discriminator_output_manager = DiscriminatorOutputManager(criterion)
 
+    logger.start_training()
     if LOAD_WEIGHTS:
         raise Exception("Not yet implemented")
 
@@ -97,11 +99,11 @@ if __name__ == "__main__":
             lambda_=POPULATION,
             device=DEVICE,
         )
-        sample_1 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
+        sample_1 = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
         logger.log_discriminator_sample(sample_1, "begin")
         discriminator_output_manager.visualise(sample_1, logger.dir + "/discriminator_begin.png")
         train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
-        sample_2 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
+        sample_2 = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
         logger.log_discriminator_sample(sample_2, "end")
         discriminator_output_manager.visualise(sample_2, logger.dir + "/discriminator_end.png")
     else:

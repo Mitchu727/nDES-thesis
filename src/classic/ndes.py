@@ -99,6 +99,7 @@ class NDES:
         self.secondary_mutation = kwargs.get("secondary_mutation", None)
         self.logger.log_conf_kwargs(kwargs)
         self.log_config()
+        self.logger.update_config()
 
     def log_config(self):
         self.logger.log_conf("start", self.start)
@@ -194,7 +195,6 @@ class NDES:
         assert (self.lower < self.upper).all()
 
         print(f"Running nDES for a problem of size {self.problem_size}")
-        self.logger.start_training()
 
         # The best fitness found so far
         self.best_fitness = self.worst_fitness #jakie jest w takim wypadku solution dla best_fitness, program wybucha
@@ -314,7 +314,7 @@ class NDES:
                         self.mu * self.cp * (2 - self.cp)
                     ) * step
 
-                self.logger.log_iter("step_size", (step**2).sum().item())
+                self.logger.log_iter("step", (step**2).sum().item())
                 self.logger.log_iter("pc", (pc**2).sum().item())
 
                 # Sample from history with uniform distribution
@@ -361,8 +361,8 @@ class NDES:
                 wb = fitness.argmin()
 
                 # self.logger.log_fitness(fitness) # WARNING - costly function when used on large populations
-                self.logger.log_iter("best fitness", fitness[wb].item())
-                self.logger.log_iter("mean fitness", fitness.clamp(0, self.worst_fitness).mean().item())
+                self.logger.log_iter("best_fitness", fitness[wb].item())
+                self.logger.log_iter("mean_fitness", fitness.clamp(0, self.worst_fitness).mean().item())
                 self.logger.log_iter("iter", self.iter_)
 
                 if self.test_func is None and (fitness[wb] < self.best_fitness):
@@ -420,8 +420,6 @@ class NDES:
                 self.logger.end_iter()
                 if self.iter_callback:
                     self.iter_callback()
-
-        self.logger.end_training()
 
         # log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
         #  np.save(f"times_{self.problem_size}.npy", np.array(evaluation_times))
