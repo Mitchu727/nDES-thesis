@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import wandb
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
@@ -11,7 +10,7 @@ from src.data_management.datasets.generated_fake_dataset import GeneratedFakeDat
 from src.data_management.output.discriminator_output import DiscriminatorSample, DiscriminatorOutputManager
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
-from src.gan.utils import create_merged_dataloader
+from src.gan.utils import create_merged_train_dataloader
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
@@ -73,7 +72,7 @@ if __name__ == "__main__":
     fashionMNIST = FashionMNISTDataset()
     generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE)
 
-    train_loader = create_merged_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
+    train_loader = create_merged_train_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
 
     discriminator_output_manager = DiscriminatorOutputManager(criterion)
 
@@ -100,11 +99,11 @@ if __name__ == "__main__":
         )
         sample_1 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
         logger.log_discriminator_sample(sample_1, "begin")
-        discriminator_output_manager.visualise(sample_1, logger.dir + "/dicriminator_begin.png")
+        discriminator_output_manager.visualise(sample_1, logger.dir + "/discriminator_begin.png")
         train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
         sample_2 = DiscriminatorSample.from_discriminator_and_loader(discriminator, train_loader)
         logger.log_discriminator_sample(sample_2, "end")
-        discriminator_output_manager.visualise(sample_2, logger.dir + "/dicriminator_end.png")
+        discriminator_output_manager.visualise(sample_2, logger.dir + "/discriminator_end.png")
     else:
         raise Exception("Not yet implemented")
     logger.end_training()

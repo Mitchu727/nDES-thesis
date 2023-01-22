@@ -5,7 +5,7 @@ import torch
 import wandb
 
 class Logger:
-    def __init__(self, path, model_name="nDES", save_interval=50):
+    def __init__(self, path, model_name="nDES", save_interval=50, directory_name="ndes"):
         self.model_name = model_name
         self._iteration_log = {}
         self._fitness_log = {}
@@ -13,7 +13,7 @@ class Logger:
         self.save_interval = save_interval
         self.iter_logs_collector = pd.DataFrame()
         self._fitness_log = pd.DataFrame()
-        self.dir = os.path.join(path, f"ndes_log_{timer()}")
+        self.dir = os.path.join(path, f"{directory_name}_{timer()}")
         os.mkdir(self.dir)
 
     def start_training(self):

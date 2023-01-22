@@ -13,7 +13,7 @@ from src.data_management.output.discriminator_output import DiscriminatorSample,
 from src.data_management.output.generator_output import GeneratorOutputManager, GeneratorSample
 from src.gan.generator import Generator
 from src.gan.discriminator import Discriminator
-from src.gan.utils import create_merged_dataloader
+from src.gan.utils import create_merged_train_dataloader
 
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 1000)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     generator_output_manager = GeneratorOutputManager()
 
     fashionMNIST = FashionMNISTDataset()
-    number_of_samples = fashionMNIST.get_number_of_samples()
+    number_of_samples = fashionMNIST.get_number_of_train_samples()
 
     train_generated_images_number = 100000
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             raise Exception("Not yet implemented")
         for _ in range(10):
             generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples)
-            discriminator_data_loader = create_merged_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
+            discriminator_data_loader = create_merged_train_dataloader(fashionMNIST, generated_fake_dataset, BATCH_SIZE, DEVICE)
 
             discriminator_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_data_loader)
             discriminator_output_manager.visualise(discriminator_sample)
