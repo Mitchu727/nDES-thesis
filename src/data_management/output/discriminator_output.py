@@ -86,7 +86,7 @@ class DiscriminatorVisualiser:
                 current_column += 1
         plt.suptitle(DiscriminatorMetricManager.calculated_metrics_to_string(metrics))
         plt.tight_layout()
-        plt.subplots_adjust(top=0.95)
+        plt.subplots_adjust(top=0.90)
         plt.savefig(path_to_save)
         plt.show()
 

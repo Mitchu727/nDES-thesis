@@ -13,7 +13,7 @@ class FitnessEWMALogger:
         # sum of losses per batch for the current iteration
         self.current_losses = torch.zeros(self.num_batches).to(torch.device("cpu"))
         # count of evaluations per batch for the current iteration
-        self.current_counts = torch.ones(self.num_batches).to(torch.device("cpu")) # should be ones but for compatibility testing is set to zeros
+        self.current_counts = torch.zeros(self.num_batches).to(torch.device("cpu")) # should be ones but for compatibility testing is set to zeros
         self.set_initial_losses(data_gen, model, criterion)
 
     def set_initial_losses(self, data_gen, model, criterion):
