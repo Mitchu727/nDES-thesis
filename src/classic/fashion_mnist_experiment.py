@@ -11,9 +11,10 @@ from torchvision import datasets, transforms
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
+from src.classic.population_initializers import XavierMVNPopulationInitializerV2
 from src.classic.utils import seed_everything, train_via_ndes, stratify
 
-from src.data_loaders.my_data_set_loader import MyDatasetLoader
+from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
 #  EPOCHS = 25000
 # POPULATION_MULTIPLIER = 8
 # POPULATION = int(POPULATION_MULTIPLIER * 4000)
@@ -21,6 +22,8 @@ from src.data_loaders.my_data_set_loader import MyDatasetLoader
 import wandb
 
 #  EPOCHS = 25000
+from src.loggers.logger import Logger
+
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 200)
 EPOCHS = int(POPULATION) * 500
@@ -28,7 +31,7 @@ NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
 BOOTSTRAP = True
-MODEL_NAME = "fashion_ndes_bootstrapped"
+MODEL_NAME = "nDES-refactored"
 LOAD_WEIGHTS = False
 SEED_OFFSET = 0
 BATCH_SIZE = 64
@@ -166,24 +169,11 @@ def cycle(loader):
 
 
 if __name__ == "__main__":
+    logger = Logger("ndes_logs/", MODEL_NAME)
     seed_everything(SEED_OFFSET)
 
-    wandb.init(project="nDES-refactored", entity="mmatak", config={
-        "population_multiplier": POPULATION_MULTIPLIER,
-        "population": POPULATION,
-        "epochs": EPOCHS,
-        "ndes_training": NDES_TRAINING,
-        "device": DEVICE,
-        "bootstrap": BOOTSTRAP,
-        "model_name": MODEL_NAME,
-        "load_weights": LOAD_WEIGHTS,
-        "seed_offset": SEED_OFFSET,
-        "batch_size": BATCH_SIZE,
-        "validation_size": VALIDATION_SIZE,
-        "stratify": STRATIFY,
-    })
-
     model = Net().to(DEVICE)
+    logger.start_training()
     if LOAD_WEIGHTS:
         model.load_state_dict(torch.load(MODEL_NAME)["state_dict"])
 
@@ -225,10 +215,12 @@ if __name__ == "__main__":
             criterion=criterion,
             data_gen=train_loader,
             ndes_config=ndes_config,
+            logger=logger,
             use_fitness_ewma=True,
             x_val=x_val,
             y_val=y_val,
             restarts=None,
+            # population_initializer=XavierMVNPopulationInitializerV2,
             lr=1,
             secondary_mutation=SecondaryMutation.Gradient,
             lambda_=POPULATION,
@@ -240,4 +232,4 @@ if __name__ == "__main__":
         trainer = Trainer(gpus=1, early_stop_callback=early_stop_callback)
         trainer.fit(model)
         trainer.test(model)
-    wandb.finish()
+    logger.end_training()

@@ -27,7 +27,7 @@ class FitnessEWMALogger:
                 break
 
     def update_batch(self, batch_idx, loss):
-        self.current_losses[batch_idx] += loss
+        self.current_losses[batch_idx] += loss.cpu()
         self.current_counts[batch_idx] += 1
         return loss - self.ewma[batch_idx]  # individual's fitness
 

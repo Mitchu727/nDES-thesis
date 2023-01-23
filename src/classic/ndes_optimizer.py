@@ -11,25 +11,24 @@ from src.classic.utils import seconds_to_human_readable
 from src.classic.fitness_EWMA_logger import FitnessEWMALogger
 
 
-#TODO refactor działania na zbiorach
-
 class BasenDESOptimizer:
     """Base interface for the nDES optimizer for the neural networks optimization."""
 
     def __init__(
         self,
-        model,
-        criterion,
-        data_gen,
-        ndes_config,
-        x_val=None,
-        y_val=None,
-        use_fitness_ewma=False,
-        population_initializer=XavierMVNPopulationInitializer,
-        restarts=None,
-        lr=1e-3,
-        **kwargs,
-    ):
+            model: object,
+            criterion: object,
+            data_gen: object,
+            ndes_config: object,
+            logger: object,
+            x_val: object = None,
+            y_val: object = None,
+            use_fitness_ewma: object = False,
+            population_initializer: object = XavierMVNPopulationInitializer,
+            restarts: object = None,
+            lr: object = 1e-3,
+            **kwargs: object,
+    ) -> object:
         """
         Args:
             model: ``pytorch``'s model
@@ -49,6 +48,7 @@ class BasenDESOptimizer:
         self.ndes_config = ndes_config
         self.population_initializer = population_initializer
         self.data_gen = data_gen
+        self.logger = logger
         self.x_val = x_val
         self.y_val = y_val
         self.use_fitness_ewma = use_fitness_ewma
@@ -64,6 +64,16 @@ class BasenDESOptimizer:
         if use_fitness_ewma:
             self.ewma_logger = FitnessEWMALogger(data_gen, model, criterion)
             self.ndes_config["iter_callback"] = self.ewma_logger.update_after_iteration
+        self.logger.log_conf_kwargs(kwargs)
+        self.log_config()
+
+
+    def log_config(self):
+        self.logger.log_conf("criterion", self.criterion)
+        self.logger.log_conf("secondary_mutation", self.secondary_mutation)
+        self.logger.log_conf("use_fitness_ewma", self.use_fitness_ewma)
+        self.logger.log_conf("population_initializer", self.population_initializer)
+        self.logger.log_conf("lr", self.lr)
 
     def zip_layers(self, layers_iter):
         """Concatenate flattened layers into a single 1-D tensor.
@@ -131,9 +141,8 @@ class BasenDESOptimizer:
                 weights -= self.lr * gradient
         else:
             out = self.model(b_x)
-            loss = self.criterion(out, y)
-        loss = loss.item()
-        print(f"Loss: {loss}")
+            loss = self.criterion(out, y).item()
+        # print(f"Loss: {loss}")
         if self.use_fitness_ewma:
             return self.ewma_logger.update_batch(batch_idx, loss)
         return loss
@@ -151,23 +160,21 @@ class BasenDESOptimizer:
             requires_grad = self.secondary_mutation == SecondaryMutation.Gradient
             for param in self.model.parameters():
                 param.requires_grad = requires_grad
-            population_initializer_kwargs = {
-                'xavier_coeffs': self.xavier_coeffs,
-                'device': self.kwargs["device"],
-                'lambda_': self.kwargs.get("lambda_", None),
-            }
             population_initializer = self.population_initializer(
-                best_value, **population_initializer_kwargs
+                initial_value=best_value,
+                xavier_coeffs=self.xavier_coeffs,
+                device=self.kwargs["device"],
+                lambda_=self.kwargs.get("lambda_", None)
             )
             if self.x_val is not None:
                 val_test_func = self.validate_and_test
             else:
                 val_test_func = None
             determined_config = {
-                'initial_value': best_value,
-                'fn': self._objective_function,
+                # 'initial_value': best_value,
+                # 'fn': self._objective_function,
                 'xavier_coeffs': self.xavier_coeffs,
-                'population_initializer': population_initializer,
+                # 'population_initializer': population_initializer,
                 'test_func': val_test_func,
                 'secondary_mutation': self.secondary_mutation,
                 'lambda_': self.kwargs.get("lambda_")
@@ -188,7 +195,14 @@ class BasenDESOptimizer:
                     # gc.collect()
                     # torch.cuda.empty_cache()
             else:
-                ndes = NDES(**self.ndes_config)
+                ndes = NDES(
+                    initial_value=best_value,
+                    fn=self._objective_function,
+                    # lower=self.ndes_config["lower"],
+                    # upper=self.ndes_config["upper"],
+                    population_initializer=population_initializer,
+                    logger=self.logger,
+                    **self.ndes_config)
                 best_value = ndes.run()
             self._reweight_model(best_value)
             return self.model

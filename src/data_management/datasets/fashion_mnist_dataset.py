@@ -24,9 +24,25 @@ class FashionMNISTDataset:
             self.train_dataset, batch_size=len(self.train_dataset), shuffle=True
         ):
             self.train_data, self.train_targets = x, y
+        for x, y in torch.utils.data.DataLoader(
+            self.test_dataset, batch_size=len(self.train_dataset), shuffle=True
+        ):
+            self.test_data, self.test_targets = x, y
 
     def get_train_set_targets(self):
         return torch.ones_like(self.train_dataset.targets).float()
 
     def get_train_images(self):
         return self.train_data
+
+    def get_test_set_targets(self):
+        return torch.ones_like(self.test_dataset.targets).float()
+
+    def get_test_images(self):
+        return self.test_data
+
+    def get_number_of_train_samples(self):
+        return len(self.train_data)
+
+    def get_number_of_test_samples(self):
+        return len(self.test_data)
