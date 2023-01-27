@@ -17,12 +17,9 @@ from src.gan.utils import create_merged_train_dataloader, create_merged_test_dat
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 10)
-EPOCHS = int(POPULATION) * 10
+POPULATION = int(POPULATION_MULTIPLIER * 35000)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
-
-# TODO
-# zbiór testowy
 
 DEVICE = torch.device("cuda:0")
 BOOTSTRAP = False
@@ -32,8 +29,8 @@ SEED_OFFSET = 0
 BATCH_SIZE = 64
 VALIDATION_SIZE = 10000
 STRATIFY = False
-PRE_TRAINED_DISCRIMINATOR = False
-PRE_TRAINED_GENERATOR = False
+PRE_TRAINED_DISCRIMINATOR = True
+PRE_TRAINED_GENERATOR = True
 FAKE_DATASET_SIZE = 60000
 
 
@@ -77,9 +74,9 @@ if __name__ == "__main__":
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
 
     if PRE_TRAINED_DISCRIMINATOR:
-        discriminator.load_state_dict(torch.load("../../../pre-trained/discriminator"))
+        discriminator.load_state_dict(torch.load("pre-trained/discriminator"))
     if PRE_TRAINED_GENERATOR:
-        generator.load_state_dict(torch.load("../../../pre-trained/generator"))
+        generator.load_state_dict(torch.load("pre-trained/generator"))
 
     fashionMNIST = FashionMNISTDataset()
     generated_fake_dataset = GeneratedFakeDataset(generator, FAKE_DATASET_SIZE, 10000)

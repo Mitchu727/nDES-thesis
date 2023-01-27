@@ -51,7 +51,7 @@ if __name__ == "__main__":
     discriminator_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.0001)
     discriminator_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=discriminator_optimizer, gamma=0.99)
 
-    num_epochs = 10
+    num_epochs = 100
     logger.start_training()
     sample_1 = DiscriminatorSample.from_discriminator_and_loader(discriminator, merged_test_loader)
     logger.log_discriminator_sample(sample_1, "begin")

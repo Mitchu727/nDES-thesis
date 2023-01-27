@@ -288,7 +288,7 @@ class NDES:
 
                 # Save selected population in the history buffer
                 #  history[:, :, hist_head] = (population[:, selection] * hist_norm / self.Ft).cpu()
-                history[:, :, hist_head] = population.cpu()[:, selection]
+                history[:, :, hist_head] = population.cpu()[:, selection.cpu()]
                 history[:, :, hist_head] *= hist_norm / self.Ft
 
                 # Calculate weighted mean of selected points
