@@ -29,7 +29,12 @@ class GeneratedFakeDataset:
         return torch.zeros(self.num_of_train_samples)
 
     def get_test(self):
-        return self.train_dataset
+        return self.test_dataset
 
     def get_test_set_targets(self):
         return torch.zeros(self.num_of_test_samples)
+
+    def get_random_from_test(self, n_samples):
+        perm = torch.randperm(self.test_dataset.size(0))
+        idx = perm[:n_samples]
+        return self.test_dataset[idx], torch.zeros(len(idx))

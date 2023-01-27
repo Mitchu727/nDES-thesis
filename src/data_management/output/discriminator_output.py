@@ -1,27 +1,34 @@
 import matplotlib.pyplot as plt
 import torch
+import numpy as np
 
 
 class DiscriminatorOutputManager:
-    def __init__(self, criterion=None):
+    def __init__(self, criterion, logger):
         self.metrics_manager = DiscriminatorMetricManager()
         self.visualiser = DiscriminatorVisualiser()
         self.criterion = criterion
+        self.logger = logger
 
     def visualise(self, discriminator_sample, path_to_save):
-        self.calculate_metrics(discriminator_sample)
+        self.calculate_metrics(discriminator_sample, log=False)
         self.visualiser.from_images_amd_metrics(
             discriminator_sample=discriminator_sample,
             metrics=self.metrics_manager.calculated_metrics,
-            path_to_save=path_to_save
+            path_to_save=self.logger.dir + path_to_save
         )
 
     def set_criterion(self, criterion):
         self.criterion = criterion
 
-    def calculate_metrics(self, discriminator_sample):
+    def calculate_metrics(self, discriminator_sample, log=True):
         self.metrics_manager.calculate_criterion_metric(discriminator_sample, self.criterion)
         self.metrics_manager.calculate_mean_prediction_metric(discriminator_sample)
+        self.metrics_manager.calculate_error_real(discriminator_sample, self.criterion)
+        self.metrics_manager.calculate_error_fake(discriminator_sample, self.criterion)
+        if log:
+            self.logger.log_output_metrics(self.metrics_manager.calculated_metrics.copy())
+        # self.metrics_manager.reset()
 
 
 class DiscriminatorMetricManager:
@@ -29,14 +36,28 @@ class DiscriminatorMetricManager:
         self.calculated_metrics = {}
 
     def calculate_criterion_metric(self, discriminator_sample, criterion):
-        metric_id = 'Criterion'
+        metric_id = 'Wartość funkcji straty'
         if criterion is None:
             raise Exception("No criterion given, cannot calculate loss")
-        self.calculated_metrics[metric_id] = criterion(discriminator_sample.targets, discriminator_sample.predictions)
+        self.calculated_metrics[metric_id] = criterion(discriminator_sample.targets, discriminator_sample.predictions).item()
 
     def calculate_mean_prediction_metric(self, discriminator_sample):
-        metric_id = 'Mean'
-        self.calculated_metrics[metric_id] = torch.mean(discriminator_sample.predictions)
+        metric_id = 'Średnia predykcja'
+        self.calculated_metrics[metric_id] = torch.mean(discriminator_sample.predictions).item()
+
+    def calculate_error_real(self, discriminator_sample, criterion):
+        metric_id = "Błąd dla próbek rzeczywistych"
+        real_indices = np.argwhere(discriminator_sample.targets == 1)
+        target_real_indices = discriminator_sample.targets[real_indices]
+        predictions_real_indices = discriminator_sample.predictions[real_indices]
+        self.calculated_metrics[metric_id] = criterion(target_real_indices, predictions_real_indices).item()
+
+    def calculate_error_fake(self, discriminator_sample, criterion):
+        metric_id = "Błąd dla próbek fałszywych"
+        fake_indices = np.argwhere(discriminator_sample.targets == 0)
+        target_fake_indices = discriminator_sample.targets[fake_indices]
+        predictions_fake_indices = discriminator_sample.predictions[fake_indices]
+        self.calculated_metrics[metric_id] = criterion(target_fake_indices, predictions_fake_indices).item()
 
     def reset(self):
         self.calculated_metrics = {}
@@ -61,7 +82,7 @@ class DiscriminatorSample:
         images = data_batch[1][0].cpu()
         predictions = discriminator(data_batch[1][0].to(discriminator.device)).cpu()
         targets = data_batch[1][1].cpu()
-        return cls(images, predictions, targets)
+        return cls(images, targets, predictions)
 
 
 class DiscriminatorVisualiser:
@@ -78,7 +99,7 @@ class DiscriminatorVisualiser:
         for i in range(images.size(0)):
             current_axs = axs[current_row, current_column]
             self.put_image(images[i], current_axs)
-            current_axs.set_title(f"Prediction: {discriminator_sample.targets[i].item():.2f} \n Target: {discriminator_sample.predictions[i].item():.2f}")
+            current_axs.set_title(f"Predykcja: {discriminator_sample.predictions[i].item():.2f} \n Wartość docelowa: {discriminator_sample.targets[i].item():.2f}")
             if current_column == columns_number-1:
                 current_column = 0
                 current_row += 1

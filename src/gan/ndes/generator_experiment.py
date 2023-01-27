@@ -90,11 +90,11 @@ if __name__ == "__main__":
     )
 
     sample_1 = GeneratorSample.sample_from_generator(generator, discriminator, 32)
-    generator_output_manager.visualise(sample_1)
+    generator_output_manager.visualise(sample_1, "begin")
     logger.log_generator_sample(sample_1, "begin")
     train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
     sample_2 = GeneratorSample.sample_from_generator(generator, discriminator, 32)
-    generator_output_manager.visualise(sample_2)
+    generator_output_manager.visualise(sample_2, "begin")
     logger.log_generator_sample(sample_2, "end")
     logger.end_training()
 

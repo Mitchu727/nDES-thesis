@@ -5,7 +5,7 @@ import torch
 
 from src.classic.ndes import NDES, SecondaryMutation
 from src.classic.population_initializers import (
-    XavierMVNPopulationInitializer,
+    XavierMVNPopulationInitializer, XavierMVNPopulationInitializerV2,
 )
 from src.classic.utils import seconds_to_human_readable
 from src.classic.fitness_EWMA_logger import FitnessEWMALogger
@@ -19,13 +19,13 @@ class BasenDESOptimizer:
             model: object,
             criterion: object,
             data_gen: object,
-            ndes_config: object,
             logger: object,
             x_val: object = None,
             y_val: object = None,
             use_fitness_ewma: object = False,
-            population_initializer: object = XavierMVNPopulationInitializer,
+            population_initializer: object = XavierMVNPopulationInitializerV2,
             restarts: object = None,
+            secondaryMutation=None,
             lr: object = 1e-3,
             **kwargs: object,
     ) -> object:
@@ -45,7 +45,6 @@ class BasenDESOptimizer:
         self._layers_offsets_shapes = []
         self.model = model
         self.criterion = criterion
-        self.ndes_config = ndes_config
         self.population_initializer = population_initializer
         self.data_gen = data_gen
         self.logger = logger
@@ -59,7 +58,7 @@ class BasenDESOptimizer:
             self.ndes_config["budget"] //= restarts
         self.initial_value = self.zip_layers(model.parameters())
         self.xavier_coeffs = self.calculate_xavier_coefficients(model.parameters())
-        self.secondary_mutation = kwargs.get("secondary_mutation", None)
+        self.secondary_mutation = secondaryMutation
         self.lr = lr
         if use_fitness_ewma:
             self.ewma_logger = FitnessEWMALogger(data_gen, model, criterion)
@@ -179,7 +178,7 @@ class BasenDESOptimizer:
                 'secondary_mutation': self.secondary_mutation,
                 'lambda_': self.kwargs.get("lambda_")
             }
-            self.ndes_config = self.ndes_config | determined_config
+            self.kwargs = self.kwargs | determined_config
             # restarty w obecnej konfiguracji są none
             if self.restarts is not None:
                 pass
@@ -202,7 +201,7 @@ class BasenDESOptimizer:
                     # upper=self.ndes_config["upper"],
                     population_initializer=population_initializer,
                     logger=self.logger,
-                    **self.ndes_config)
+                    **self.kwargs)
                 best_value = ndes.run()
             self._reweight_model(best_value)
             return self.model

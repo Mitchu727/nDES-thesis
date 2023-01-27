@@ -46,3 +46,8 @@ class FashionMNISTDataset:
 
     def get_number_of_test_samples(self):
         return len(self.test_data)
+
+    def get_random_from_test(self, n_samples):
+        perm = torch.randperm(self.test_data.size(0))
+        idx = perm[:n_samples]
+        return self.test_data[idx], torch.ones(len(idx))

@@ -36,5 +36,16 @@ def create_merged_test_dataloader(real_dataset, fake_dataset, batch_size, device
     return test_loader
 
 
+def create_discriminator_visualisation_dataloader(real_part, fake_part):
+    visualisation_data = torch.cat([real_part[0], fake_part[0]], 0)
+    visualisation_targets = torch.cat([real_part[1], fake_part[1]], 0)
+    loader = MyDatasetLoader(
+        x_train=visualisation_data,
+        y_train=torch.unsqueeze(visualisation_targets, 1),
+        batch_size=len(visualisation_data)
+    )
+    return loader
+
+
 def train_discriminator_adam(model, criterion, train_dataset):
     pass
