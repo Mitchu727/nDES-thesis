@@ -5,39 +5,56 @@ import matplotlib.pyplot as plt
 
 
 class GeneratorOutputManager:
-    def __init__(self):
+    def __init__(self, criterion, logger):
         self.metrics_manager = GeneratorMetricsManager()
         self.visualiser = GeneratorVisualiser()
+        self.criterion = criterion
+        self.logger = logger
 
     def visualise(self, generator_sample, path_to_save):
-        self.calculate_metrics(generator_sample)
+        self.calculate_metrics(generator_sample, log=False)
         self.visualiser.from_images_and_metrics(
             generator_sample=generator_sample,
             metrics=self.metrics_manager.calculated_metrics,
-            path_to_save=path_to_save
+            path_to_save=self.logger.dir + path_to_save
         )
 
-    def calculate_metrics(self, discriminator_sample):
-        self.metrics_manager.calculate_mean_output_metric(discriminator_sample)
-        self.metrics_manager.calculate_min_output_metric(discriminator_sample)
-        self.metrics_manager.calculate_max_output_metric(discriminator_sample)
+    def calculate_metrics(self, generator_sample, log=True):
+        self.metrics_manager.calculate_mean_output_metric(generator_sample)
+        self.metrics_manager.calculate_min_output_metric(generator_sample)
+        self.metrics_manager.calculate_max_output_metric(generator_sample)
+        self.metrics_manager.calculate_output_std_dev_metric(generator_sample)
+        self.metrics_manager.calculate_criterion_metric(generator_sample, self.criterion)
+        if log:
+            self.logger.log_output_metrics(self.metrics_manager.calculated_metrics)
 
 
 class GeneratorMetricsManager:
     def __init__(self):
         self.calculated_metrics = {}
 
+    def calculate_criterion_metric(self, generator_sample, criterion):
+        metric_id = 'Funkcja straty'
+        self.calculated_metrics[metric_id] = criterion(
+            generator_sample.discriminator_outputs,
+            torch.ones(len(generator_sample.discriminator_outputs), 1).to(generator_sample.discriminator_outputs.device)
+        ).item()
+
     def calculate_mean_output_metric(self, generator_sample):
-        metric_id = 'Mean'
-        self.calculated_metrics[metric_id] = torch.mean(generator_sample.discriminator_outputs)
+        metric_id = 'Średnie wskazanie'
+        self.calculated_metrics[metric_id] = torch.mean(generator_sample.discriminator_outputs).item()
 
     def calculate_min_output_metric(self, generator_sample):
-        metric_id = 'Min'
-        self.calculated_metrics[metric_id] = torch.min(generator_sample.discriminator_outputs)
+        metric_id = 'Minimalne wskazanie'
+        self.calculated_metrics[metric_id] = torch.min(generator_sample.discriminator_outputs).item()
 
     def calculate_max_output_metric(self, generator_sample):
-        metric_id = 'Max'
-        self.calculated_metrics[metric_id] = torch.max(generator_sample.discriminator_outputs)
+        metric_id = 'Maksymalne wskazanie'
+        self.calculated_metrics[metric_id] = torch.max(generator_sample.discriminator_outputs).item()
+
+    def calculate_output_std_dev_metric(self, generator_sample):
+        metric_id = 'Odchylenie standardowe'
+        self.calculated_metrics[metric_id] = torch.max(generator_sample.discriminator_outputs).item()
 
     def reset(self):
         self.calculated_metrics = {}
@@ -56,8 +73,15 @@ class GeneratorSample:
         self.discriminator_outputs = discriminator_outputs
 
     @classmethod
-    def sample_from_generator(self, generator, discriminator, num_of_samples):
+    def sample_from_generator(cls, generator, discriminator, num_of_samples):
         generated_images = generator(get_noise_for_nn(generator.get_latent_dim(), num_of_samples, generator.device)).detach().cpu()
+        discriminator_outputs = discriminator(generated_images.to(discriminator.device))
+        return GeneratorSample(generated_images, discriminator_outputs)
+
+    @classmethod
+    def sample_from_generator_and_loader(cls, generator, discriminator, loader):
+        data_batch = next(iter(loader))
+        generated_images = generator(data_batch[1][0].to(generator.device)).detach().cpu()
         discriminator_outputs = discriminator(generated_images.to(discriminator.device))
         return GeneratorSample(generated_images, discriminator_outputs)
 

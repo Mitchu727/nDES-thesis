@@ -12,3 +12,4 @@
 *adam_logs/
 *models/
 *data
+/src/loggers/images/*
