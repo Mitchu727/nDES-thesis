@@ -47,17 +47,17 @@ class DiscriminatorMetricManager:
 
     def calculate_error_real(self, discriminator_sample, criterion):
         metric_id = "Błąd dla próbek rzeczywistych"
-        real_indices = np.argwhere(discriminator_sample.targets == 1)
-        target_real_indices = discriminator_sample.targets[real_indices]
-        predictions_real_indices = discriminator_sample.predictions[real_indices]
-        self.calculated_metrics[metric_id] = criterion(target_real_indices, predictions_real_indices).item()
+        real_indices = np.argwhere(discriminator_sample.targets == 1)[0]
+        target_real = discriminator_sample.targets[real_indices]
+        predictions_real = discriminator_sample.predictions[real_indices]
+        self.calculated_metrics[metric_id] = criterion(target_real, predictions_real).item()
 
     def calculate_error_fake(self, discriminator_sample, criterion):
         metric_id = "Błąd dla próbek fałszywych"
-        fake_indices = np.argwhere(discriminator_sample.targets == 0)
-        target_fake_indices = discriminator_sample.targets[fake_indices]
-        predictions_fake_indices = discriminator_sample.predictions[fake_indices]
-        self.calculated_metrics[metric_id] = criterion(target_fake_indices, predictions_fake_indices).item()
+        fake_indices = np.argwhere(discriminator_sample.targets == 0)[0]
+        target_fake = discriminator_sample.targets[fake_indices]
+        predictions_fake = discriminator_sample.predictions[fake_indices]
+        self.calculated_metrics[metric_id] = criterion(target_fake, predictions_fake).item()
 
     def reset(self):
         self.calculated_metrics = {}
