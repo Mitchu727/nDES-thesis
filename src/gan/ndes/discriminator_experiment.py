@@ -17,8 +17,8 @@ from src.gan.utils import create_merged_train_dataloader, create_merged_test_dat
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 35000)
-EPOCHS = int(POPULATION) * 100
+POPULATION = int(POPULATION_MULTIPLIER * 350)
+EPOCHS = int(POPULATION) * 10
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -114,12 +114,14 @@ if __name__ == "__main__":
         )
 
         evaluate_discriminator(discriminator, test_loader, "begin")
+
         vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
         discriminator_output_manager.visualise(vis_sample, "/discriminator_begin.png")
 
         train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
 
         evaluate_discriminator(discriminator, test_loader, "end")
+
         vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
         discriminator_output_manager.visualise(vis_sample, "/discriminator_end.png")
     else:

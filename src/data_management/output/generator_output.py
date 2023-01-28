@@ -54,7 +54,7 @@ class GeneratorMetricsManager:
 
     def calculate_output_std_dev_metric(self, generator_sample):
         metric_id = 'Odchylenie standardowe'
-        self.calculated_metrics[metric_id] = torch.max(generator_sample.discriminator_outputs).item()
+        self.calculated_metrics[metric_id] = torch.std(generator_sample.discriminator_outputs).item()
 
     def reset(self):
         self.calculated_metrics = {}

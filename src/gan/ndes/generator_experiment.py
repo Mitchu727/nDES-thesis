@@ -52,9 +52,9 @@ if __name__ == "__main__":
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
 
     if PRE_TRAINED_DISCRIMINATOR:
-        generator.load_state_dict(torch.load("../../../pre-trained/generator"))
+        generator.load_state_dict(torch.load("pre-trained/generator"))
     if PRE_TRAINED_GENERATOR:
-        discriminator.load_state_dict(torch.load("../../../pre-trained/discriminator"))
+        discriminator.load_state_dict(torch.load("pre-trained/discriminator"))
 
     ndes_config = {
         'history': 3,
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     # criterion = lambda out, targets: -discriminator(out).unsqueeze(1).sum()/out.size()[0]
     criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
 
-    train_loader = ForGeneratorDataloader.for_generator(generator, BATCH_NUM, 60000)
-    test_loader = ForGeneratorDataloader.for_generator(generator, 1, 10000)
-    visualisation_loader = ForGeneratorDataloader.for_generator(generator, BATCH_NUM, 24)
+    train_loader = ForGeneratorDataloader.for_generator(generator, 60000, BATCH_NUM)
+    test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
+    visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
 
     logger.start_training()
     generator_ndes_optim = BasenDESOptimizer(

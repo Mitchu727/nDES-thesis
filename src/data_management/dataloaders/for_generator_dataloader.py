@@ -9,5 +9,5 @@ class ForGeneratorDataloader:
     def for_generator(generator, number_of_samples, batch_num):
         train_data = get_noise_for_nn(generator.get_latent_dim(), number_of_samples, generator.device)
         train_targets = torch.ones(number_of_samples, 1)
-        return MyDatasetLoader(train_data, train_targets, batch_num)
+        return MyDatasetLoader(train_data, train_targets, number_of_samples//batch_num)
 

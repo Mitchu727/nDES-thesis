@@ -94,10 +94,12 @@ class Logger:
             file.write(json_string)
 
     def print_iter_log(self):
-        print(f"======= Iteration: {self._iteration_log['iter']} =======")
-        print(f"Step size: {self._iteration_log['step']}")
-        print(f"Pc: {self._iteration_log['pc']}")
-        print(f"Best fitness: {self._iteration_log['best_fitness']}")
-        print(f"Mean fitness: {self._iteration_log['mean_fitness']}")
-        print(f"Cumulative function value: {self._iteration_log['fn_cum']}")
-        print(f"Best found: {self._iteration_log['best_found']}")
+        for key in self._iteration_log:
+            print(f"{key}:{self._iteration_log[key]}")
+        # print(f"======= Iteration: {self._iteration_log['iter']} =======")
+        # print(f"Step size: {self._iteration_log['step']}")
+        # print(f"Pc: {self._iteration_log['pc']}")
+        # print(f"Best fitness: {self._iteration_log['best_fitness']}")
+        # print(f"Mean fitness: {self._iteration_log['mean_fitness']}")
+        # print(f"Cumulative function value: {self._iteration_log['fn_cum']}")
+        # print(f"Best found: {self._iteration_log['best_found']}")
