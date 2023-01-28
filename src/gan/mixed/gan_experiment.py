@@ -22,25 +22,23 @@ from src.gan.utils import create_merged_train_dataloader, create_merged_test_dat
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 5000)
-EPOCHS = int(POPULATION) * 5
-DISCRIMINATOR_MULTIPLIER = 10
+POPULATION = int(POPULATION_MULTIPLIER * 10000)
+EPOCHS = int(POPULATION) * 10
 NDES_TRAINING = True
-CYCLES = 50
+DISCRIMINATOR_NUM_EPOCHS = 1
+CYCLES = 25
 
 DEVICE = torch.device("cuda:0")
 BOOTSTRAP = False
-MODEL_NAME = "gan_ndes_experiment"
+MODEL_NAME = "gan_mixed_experiment"
 LOAD_WEIGHTS = False
 SEED_OFFSET = 0
-BATCH_SIZE = 64
-BATCH_NUM = 50
-VALIDATION_SIZE = 10000
+BATCH_NUM = 600
 STRATIFY = False
 PRE_TRAINED_DISCRIMINATOR = False
 PRE_TRAINED_GENERATOR = False
-DISCRIMINATOR_NUM_EPOCHS = 1
-
+GENERATOR_TRAIN_IMAGES_NUMBER = 60000
+DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER = 10000
 
 def evaluate_discriminator(discriminator, test_loader, info):
     evaluation_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
@@ -55,30 +53,22 @@ def evaluate_generator(generator, discriminator, test_loader, info):
 
 if __name__ == "__main__":
     seed_everything(SEED_OFFSET+20)
-    discriminator_logger = Logger("ndes_logs/gan/discriminator", MODEL_NAME)
-    generator_logger = Logger("ndes_logs/gan/generator", MODEL_NAME)
+    discriminator_logger = Logger("mixed_logs/gan/discriminator", MODEL_NAME)
+    generator_logger = Logger("mixed_logs/gan/generator", MODEL_NAME)
 
     discriminator_logger.log_conf("DEVICE", DEVICE)
     discriminator_logger.log_conf("SEED_OFFSET", SEED_OFFSET)
-    discriminator_logger.log_conf("BATCH_SIZE", BATCH_SIZE)
-    discriminator_logger.log_conf("BATCH_NUM", BATCH_NUM)
-    discriminator_logger.log_conf("VALIDATION_SIZE", VALIDATION_SIZE)
-    discriminator_logger.log_conf("STRATIFY", STRATIFY)
     discriminator_logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
-    discriminator_logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
-    discriminator_logger.log_conf("POPULATION", POPULATION)
-    discriminator_logger.log_conf("EPOCHS", EPOCHS*DISCRIMINATOR_MULTIPLIER)
+    discriminator_logger.log_conf("DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER", DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
 
     generator_logger.log_conf("DEVICE", DEVICE)
     generator_logger.log_conf("SEED_OFFSET", SEED_OFFSET)
-    generator_logger.log_conf("BATCH_SIZE", BATCH_SIZE)
     generator_logger.log_conf("BATCH_NUM", BATCH_NUM)
-    generator_logger.log_conf("VALIDATION_SIZE", VALIDATION_SIZE)
-    generator_logger.log_conf("STRATIFY", STRATIFY)
-    generator_logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     generator_logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
     generator_logger.log_conf("POPULATION", POPULATION)
     generator_logger.log_conf("EPOCHS", EPOCHS)
+    generator_logger.log_conf("TRAIN_GENERATED_IMAGES_NUMBER", GENERATOR_TRAIN_IMAGES_NUMBER)
+
 
     generator_ndes_config = {
         'history': 3,
@@ -91,7 +81,8 @@ if __name__ == "__main__":
         'log_dir': "ndes_logs/",
         'tol': 1e-6,
         'budget': EPOCHS,
-        'device': DEVICE
+        'device': DEVICE,
+        'lambda_': POPULATION,
     }
 
     discriminator_criterion = nn.MSELoss()
@@ -113,10 +104,6 @@ if __name__ == "__main__":
     train_data_real = fashionMNIST.train_data
     train_targets_real = fashionMNIST.get_train_set_targets()
 
-
-    train_generated_images_number = 60000
-    test_generated_images_number = 10000
-
     discriminator_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.0001)
     discriminator_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=discriminator_optimizer, gamma=0.99)
 
@@ -131,12 +118,12 @@ if __name__ == "__main__":
             raise Exception("Not yet implemented")
         if BOOTSTRAP:
             raise Exception("Not yet implemented")
-        for i in range(CYCLES):
+        for cycle in range(CYCLES):
             # =====================================
             # NEW SETS CREATION
             # =====================================
-            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, test_generated_images_number)
-            train_data_fake = generated_fake_dataset.get_train_set_targets()
+            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
+            train_data_fake = generated_fake_dataset.train_dataset
             train_targets_fake = generated_fake_dataset.get_train_set_targets()
 
             # discriminator sets
@@ -153,17 +140,17 @@ if __name__ == "__main__":
 
             # generator sets
 
-            generator_train_loader = ForGeneratorDataloader.for_generator(generator, train_generated_images_number, BATCH_NUM)
+            generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER, BATCH_NUM)
             generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
             generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
 
             # =====================================
             # DISCRIMINATOR TRAINING
             # =====================================
-            evaluate_discriminator(discriminator, discriminator_test_loader, str(i))
+            evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
 
             vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
-            discriminator_output_manager.visualise(vis_sample, f"{i}_discriminator_begin.png")
+            discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_begin.png")
 
             for epoch in range(DISCRIMINATOR_NUM_EPOCHS):
                 discriminator_real_acc = []
@@ -206,20 +193,20 @@ if __name__ == "__main__":
                 discriminator_logger.log_iter("discriminator fake mean error", np.mean(discriminator_error_fake))
                 discriminator_logger.end_iter()
 
-            evaluate_discriminator(discriminator, discriminator_test_loader, str(i))
+            evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
 
             vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
-            discriminator_output_manager.visualise(vis_sample, f"{i}_discriminator_end.png")
+            discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_end.png")
 
             # =====================================
             # GENERATOR TRAINING
             # =====================================
 
             generator_criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
-            evaluate_generator(generator, discriminator, generator_test_loader, str(i))
+            evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
 
             vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
-            generator_output_manager.visualise(vis_sample, f"{i}_generator_begin.png")
+            generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_begin.png")
 
             generator_ndes_optim = BasenDESOptimizer(
                 model=generator,
@@ -231,17 +218,15 @@ if __name__ == "__main__":
                 population_initializer=XavierMVNPopulationInitializerV2,
                 lr=0.00001,
                 secondary_mutation=SecondaryMutation.RandomNoise,
-                lambda_=POPULATION,
-                device=DEVICE,
                 **generator_ndes_config
             )
             generator = train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
 
-            evaluate_generator(generator, discriminator, generator_test_loader, str(i))
+            evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
 
             vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
-            generator_output_manager.visualise(vis_sample, f"{i}_generator_end.png")
+            generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_end.png")
     else:
         raise Exception("Not yet implemented")
     discriminator_logger.end_training()
-    generator_logger.start_training()
+    generator_logger.end_training()

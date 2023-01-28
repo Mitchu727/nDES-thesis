@@ -9,6 +9,7 @@
 *boostrap_adam.pth.tar
 *__pycache__/
 *ndes_logs/
+*mixed_logs/
 *adam_logs/
 *models/
 *data

@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 # ndes_25790.0373033
 
 if __name__ == "__main__":
-    log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/generator/ndes_54173.0106053/metrics_logs.csv")
+    # ../gan/ndes/ndes_logs
+    log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/generator/ndes_59264.1894285/metrics_logs.csv")
 # Minimalne wskazanie,Maksymalne wskazanie,Odchylenie standardowe,Funkcja straty
 
     ax = log_df.plot(y='Średnie wskazanie', legend=None)
@@ -48,7 +49,8 @@ if __name__ == "__main__":
     plt.savefig("metrics_images/criterion.png")
     plt.show()
 
-    log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/discriminator/ndes_54173.0101523/metrics_logs.csv")
+    # ../gan/ndes/ndes_logs
+    log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/discriminator/ndes_58595.6661315/metrics_logs.csv")
     # ,Wartość funkcji straty,Średnia predykcja,Błąd dla próbek rzeczywistych,Błąd dla próbek fałszywych
     ax = log_df.plot(y='Wartość funkcji straty', legend=None)
     ax.xaxis.set_label_text("")
