@@ -1,9 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-if __name__ == "__main__":
-    log_df = pd.read_csv("../gan/ndes/ndes_logs/discriminator/ndes_36722.4028387/iteration_logs.csv")
+# generatory
+# ndes_1746.6741294
+# ndes_20827.0899751 - pretrenowany
+#dyskriminator
+# ndes_12501.1691769 - pretrenowany
+# ndes_25790.0373033
 
+if __name__ == "__main__":
+    log_df = pd.read_csv("../../ndes_logs/discriminator/ndes_25790.0373033/iteration_logs.csv")
     ax = log_df.plot(x='iter', y='mean_fitness', legend=None)
     ax.xaxis.set_label_text("")
     plt.grid(True)
@@ -43,5 +49,5 @@ if __name__ == "__main__":
     ax.xaxis.set_label_text("")
     plt.grid(True)
     plt.title("Wartość funkcji celu dla średniej populacji")
-    plt.savefig("fn_cum.png")
+    plt.savefig("images/fn_cum.png")
     plt.show()

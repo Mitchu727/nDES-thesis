@@ -17,8 +17,8 @@ from src.gan.utils import create_merged_train_dataloader, create_merged_test_dat
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 350)
-EPOCHS = int(POPULATION) * 10
+POPULATION = int(POPULATION_MULTIPLIER * 10000)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -29,8 +29,8 @@ SEED_OFFSET = 0
 BATCH_SIZE = 64
 VALIDATION_SIZE = 10000
 STRATIFY = False
-PRE_TRAINED_DISCRIMINATOR = True
-PRE_TRAINED_GENERATOR = True
+PRE_TRAINED_DISCRIMINATOR = False
+PRE_TRAINED_GENERATOR = False
 FAKE_DATASET_SIZE = 60000
 
 

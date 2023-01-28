@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from timeit import default_timer as timer
@@ -13,11 +14,12 @@ class Logger:
         self._iteration_log = {}
         self._fitness_log = {}
         self._config_log = {}
+        self._output_metrics_log = {}
+        self._fitness_log = pd.DataFrame()
         self.save_interval = save_interval
         self.iter_logs_collector = pd.DataFrame()
-        self._fitness_log = pd.DataFrame()
+        self._output_metrics_collector = pd.DataFrame()
         self.dir = os.path.join(path, f"{directory_name}_{timer()}")
-        self._output_metrics_log = []
         if os.path.exists(path):
             os.mkdir(self.dir)
         else:
@@ -71,8 +73,12 @@ class Logger:
         torch.save(struct_to_save, f"{self.dir}/generator_{description}.pt")
 
     def log_output_metrics(self, metrics_dict):
-        self._output_metrics_log.append(metrics_dict)
+        self._output_metrics_log = copy.deepcopy(metrics_dict)
         wandb.log(metrics_dict)
+        if self._output_metrics_collector.empty:
+            self._output_metrics_collector = pd.DataFrame(columns=list(self._output_metrics_log.keys()))
+        self._output_metrics_collector = pd.concat([self._output_metrics_collector, pd.DataFrame([self._output_metrics_log])],
+                                             ignore_index=True)
 
     def log_conf(self, key, value):
         self._config_log[key] = value
@@ -89,9 +95,10 @@ class Logger:
             json.dump(self._config_log, file)
 
     def save_metrics(self):
-        with open(self.dir + '/metrics.json', 'w') as file:
-            json_string = json.dumps(self._output_metrics_log)
-            file.write(json_string)
+        self._output_metrics_collector.to_csv(f"{self.dir}/metrics_logs.csv")
+        # with open(self.dir + '/metrics.json', 'w') as file:
+        #     json_string = json.dumps(self._output_metrics_log)
+        #     file.write(json_string)
 
     def print_iter_log(self):
         for key in self._iteration_log:

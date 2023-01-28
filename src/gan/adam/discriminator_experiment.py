@@ -66,7 +66,6 @@ if __name__ == "__main__":
     merged_train_loader = data.DataLoader(
         TensorDataset(train_data_real, train_targets_real, train_data_fake, train_targets_fake), batch_size=256,
         shuffle=True, drop_last=True, pin_memory=True, num_workers=4)
-    merged_test_loader = create_merged_test_dataloader(fashionMNIST, generated_fake_dataset, 32, DEVICE)
 
     discriminator_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.0001)
     discriminator_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=discriminator_optimizer, gamma=0.99)

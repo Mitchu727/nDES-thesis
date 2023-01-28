@@ -11,8 +11,8 @@ from src.classic.utils import seed_everything, train_via_ndes_without_test_datas
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 10)
-EPOCHS = int(POPULATION) * 10
+POPULATION = int(POPULATION_MULTIPLIER * 100)
+EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
@@ -20,12 +20,11 @@ BOOTSTRAP = False
 MODEL_NAME = "gan_ndes_generator"
 LOAD_WEIGHTS = False
 SEED_OFFSET = 0
-BATCH_SIZE = 1000
-BATCH_NUM = 50
+BATCH_NUM = 600
 VALIDATION_SIZE = 10000
 STRATIFY = False
 PRE_TRAINED_DISCRIMINATOR = True
-PRE_TRAINED_GENERATOR = False
+PRE_TRAINED_GENERATOR = True
 
 
 def evaluate_generator(generator, discriminator, test_loader, info):
@@ -35,10 +34,10 @@ def evaluate_generator(generator, discriminator, test_loader, info):
 
 
 if __name__ == "__main__":
+    seed_everything(SEED_OFFSET)
     logger = Logger("ndes_logs/generator/", MODEL_NAME)
     logger.log_conf("DEVICE", DEVICE)
     logger.log_conf("SEED_OFFSET", SEED_OFFSET)
-    logger.log_conf("BATCH_SIZE", BATCH_SIZE)
     logger.log_conf("BATCH_NUM", BATCH_NUM)
     logger.log_conf("VALIDATION_SIZE", VALIDATION_SIZE)
     logger.log_conf("STRATIFY", STRATIFY)
@@ -46,7 +45,6 @@ if __name__ == "__main__":
     logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
     logger.log_conf("POPULATION", POPULATION)
     logger.log_conf("EPOCHS", EPOCHS)
-    seed_everything(0)
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
