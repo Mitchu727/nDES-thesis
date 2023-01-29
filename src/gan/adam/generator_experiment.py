@@ -17,14 +17,17 @@ def evaluate_generator(generator, discriminator, test_loader, info):
 
 DEVICE = torch.device("cuda:0")
 PRE_TRAINED_DISCRIMINATOR = True
-PRE_TRAINED_GENERATOR = False
+PRE_TRAINED_GENERATOR = True
 MODEL_NAME = "gan_adam_generator"
 BATCH_NUM = 600
+NUM_EPOCHS = 100
 
 if __name__ == "__main__":
     logger = Logger("adam_logs/generator", MODEL_NAME, 20, "adam")
     logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
+    logger.log_conf("NUM_EPOCHS", NUM_EPOCHS)
+    logger.log_conf("BATCH_NUM", BATCH_NUM)
 
     basic_generator_criterion = nn.MSELoss()
     generator_output_manager = GeneratorOutputManager(basic_generator_criterion, logger)
@@ -43,9 +46,6 @@ if __name__ == "__main__":
     test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
     visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
 
-    num_epochs = 100
-    sample_size = 10000
-    latent_dim = 32
     criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
 
     logger.start_training()
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, visualisation_loader)
     generator_output_manager.visualise(vis_sample, "/generator_begin")
 
-    for epoch in range(num_epochs):
+    for epoch in range(NUM_EPOCHS):
         error = []
         for i in range(BATCH_NUM):
             generator_optimizer.zero_grad()

@@ -16,11 +16,11 @@ from src.gan.utils import create_merged_test_dataloader, create_discriminator_vi
 from src.loggers.logger import Logger
 
 DEVICE = torch.device("cuda:0")
-PRE_TRAINED_DISCRIMINATOR = False
-PRE_TRAINED_GENERATOR = False
+PRE_TRAINED_DISCRIMINATOR = True
+PRE_TRAINED_GENERATOR = True
 MODEL_NAME = "gan_adam_discriminator"
 FAKE_DATASET_SIZE = 60000
-
+NUM_EPOCHS = 100
 
 def evaluate_discriminator(discriminator, test_loader, info):
     evaluation_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
@@ -33,6 +33,7 @@ if __name__ == "__main__":
     logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
     logger.log_conf("FAKE_DATASET_SIZE", FAKE_DATASET_SIZE)
+    logger.log_conf("NUM_EPOCHS", NUM_EPOCHS)
 
     discriminator = Discriminator(hidden_dim=40, input_dim=784).to(DEVICE)
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
@@ -75,10 +76,10 @@ if __name__ == "__main__":
 
     evaluate_discriminator(discriminator, test_loader, "begin")
     vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
-    discriminator_output_manager.visualise(vis_sample, "/discriminator_end.png")
+    discriminator_output_manager.visualise(vis_sample, "/discriminator_begin.png")
 
-    num_epochs=100
-    for epoch in range(num_epochs):
+
+    for epoch in range(NUM_EPOCHS):
         discriminator_real_acc = []
         discriminator_fake_acc = []
         discriminator_error_real = []
@@ -115,7 +116,7 @@ if __name__ == "__main__":
             # error.append(error_discriminator_fake.mean().item() + error_discriminator_real.mean().item())
 
         logger.log_iter("iter", epoch)
-        logger.log_iter("error", np.mean(discriminator_error_real + discriminator_error_fake))
+        logger.log_iter("error", np.mean(discriminator_error_real) + np.mean(discriminator_error_fake))
         logger.log_iter("discriminator real mean error", np.mean(discriminator_error_real))
         logger.log_iter("discriminator fake mean error", np.mean(discriminator_error_fake))
         logger.end_iter()

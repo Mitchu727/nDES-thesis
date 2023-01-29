@@ -19,11 +19,11 @@ from src.gan.utils import create_merged_train_dataloader, create_merged_test_dat
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 100)
+POPULATION = int(POPULATION_MULTIPLIER * 10000)
 EPOCHS = int(POPULATION) * 5
 DISCRIMINATOR_EPOCH_MULTIPLIER = 5
 NDES_TRAINING = True
-CYCLES = 10
+CYCLES = 25
 
 DEVICE = torch.device("cuda:0")
 BOOTSTRAP = False
@@ -32,10 +32,11 @@ LOAD_WEIGHTS = False
 SEED_OFFSET = 0
 BATCH_SIZE = 64
 BATCH_NUM = 600
-VALIDATION_SIZE = 10000
 STRATIFY = False
 PRE_TRAINED_DISCRIMINATOR = False
 PRE_TRAINED_GENERATOR = False
+GENERATOR_TRAIN_IMAGES_NUMBER = 60000
+DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER = 10000
 
 def evaluate_discriminator(discriminator, test_loader, info):
     evaluation_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
@@ -58,23 +59,24 @@ if __name__ == "__main__":
     discriminator_logger.log_conf("SEED_OFFSET", SEED_OFFSET)
     discriminator_logger.log_conf("BATCH_SIZE", BATCH_SIZE)
     discriminator_logger.log_conf("BATCH_NUM", BATCH_NUM)
-    discriminator_logger.log_conf("VALIDATION_SIZE", VALIDATION_SIZE)
     discriminator_logger.log_conf("STRATIFY", STRATIFY)
     discriminator_logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     discriminator_logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
     discriminator_logger.log_conf("POPULATION", POPULATION)
     discriminator_logger.log_conf("EPOCHS", EPOCHS * DISCRIMINATOR_EPOCH_MULTIPLIER)
+    discriminator_logger.log_conf("DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER", DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
 
     generator_logger.log_conf("DEVICE", DEVICE)
     generator_logger.log_conf("SEED_OFFSET", SEED_OFFSET)
     generator_logger.log_conf("BATCH_SIZE", BATCH_SIZE)
     generator_logger.log_conf("BATCH_NUM", BATCH_NUM)
-    generator_logger.log_conf("VALIDATION_SIZE", VALIDATION_SIZE)
     generator_logger.log_conf("STRATIFY", STRATIFY)
     generator_logger.log_conf("PRE_TRAINED_DISCRIMINATOR", PRE_TRAINED_DISCRIMINATOR)
     generator_logger.log_conf("PRE_TRAINED_GENERATOR", PRE_TRAINED_GENERATOR)
     generator_logger.log_conf("POPULATION", POPULATION)
     generator_logger.log_conf("EPOCHS", EPOCHS)
+    generator_logger.log_conf("TRAIN_GENERATED_IMAGES_NUMBER", GENERATOR_TRAIN_IMAGES_NUMBER)
+
 
     discriminator_ndes_config = {
         'history': 3,
@@ -140,7 +142,7 @@ if __name__ == "__main__":
             # =====================================
             # NEW SETS CREATION
             # =====================================
-            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, test_generated_images_number)
+            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
 
             # discriminator sets
 
@@ -153,7 +155,7 @@ if __name__ == "__main__":
 
             # generator sets
 
-            generator_train_loader = ForGeneratorDataloader.for_generator(generator, train_generated_images_number, BATCH_NUM)
+            generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER , BATCH_NUM)
             generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
             generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
 
