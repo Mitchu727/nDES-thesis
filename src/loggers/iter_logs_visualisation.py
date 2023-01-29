@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 if __name__ == "__main__":
 
     # log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/generator/good_v1/iteration_logs.csv")
-    log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/discriminator/good_v1/iteration_logs.csv")
+    # log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/discriminator/good_v1/iteration_logs.csv")
+    log_df = pd.read_csv("../../ndes_logs/generator/ndes_136220.2514091/iteration_logs.csv")
     ax = log_df.plot(y='mean_fitness', legend=None)
     ax.xaxis.set_label_text("")
     plt.grid(True)

@@ -11,7 +11,7 @@ from src.classic.utils import seed_everything, train_via_ndes_without_test_datas
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 100)
+POPULATION = int(POPULATION_MULTIPLIER * 30000)
 EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 
@@ -24,7 +24,7 @@ BATCH_NUM = 600
 VALIDATION_SIZE = 10000
 STRATIFY = False
 PRE_TRAINED_DISCRIMINATOR = True
-PRE_TRAINED_GENERATOR = True
+PRE_TRAINED_GENERATOR = False
 
 
 def evaluate_generator(generator, discriminator, test_loader, info):
@@ -50,9 +50,9 @@ if __name__ == "__main__":
     generator = Generator(latent_dim=32, hidden_dim=40, output_dim=784).to(DEVICE)
 
     if PRE_TRAINED_DISCRIMINATOR:
-        generator.load_state_dict(torch.load("pre-trained/generator"))
-    if PRE_TRAINED_GENERATOR:
         discriminator.load_state_dict(torch.load("pre-trained/discriminator"))
+    if PRE_TRAINED_GENERATOR:
+        generator.load_state_dict(torch.load("pre-trained/generator"))
 
     ndes_config = {
         'history': 3,
