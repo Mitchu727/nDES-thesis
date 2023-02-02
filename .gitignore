@@ -13,6 +13,6 @@
 *adam_logs/
 *models/
 *data
-/src/loggers/images/*
+/src/loggers/iter_images/*
 /src/loggers/metrics_images/*
 /src/loggers/adam_images/*

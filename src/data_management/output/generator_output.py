@@ -16,7 +16,8 @@ class GeneratorOutputManager:
         self.visualiser.from_images_and_metrics(
             generator_sample=generator_sample,
             metrics=self.metrics_manager.calculated_metrics,
-            path_to_save=self.logger.dir + path_to_save
+            path_to_save=self.logger.dir + path_to_save,
+            columns_number=3
         )
 
     def calculate_metrics(self, generator_sample, log=True):
@@ -34,7 +35,7 @@ class GeneratorMetricsManager:
         self.calculated_metrics = {}
 
     def calculate_criterion_metric(self, generator_sample, criterion):
-        metric_id = 'Funkcja straty'
+        metric_id = 'Wartość funkcji straty generatora'
         self.calculated_metrics[metric_id] = criterion(
             generator_sample.discriminator_outputs,
             torch.ones(len(generator_sample.discriminator_outputs), 1).to(generator_sample.discriminator_outputs.device)
@@ -108,7 +109,7 @@ class GeneratorVisualiser:
                 current_column += 1
         plt.suptitle(GeneratorMetricsManager.calculated_metrics_to_string(metrics))
         plt.tight_layout()
-        plt.subplots_adjust(top=0.90)
+        plt.subplots_adjust(top=0.70)
         plt.savefig(path_to_save)
         plt.show()
 

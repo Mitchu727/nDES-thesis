@@ -36,7 +36,7 @@ class DiscriminatorMetricManager:
         self.calculated_metrics = {}
 
     def calculate_criterion_metric(self, discriminator_sample, criterion):
-        metric_id = 'Wartość funkcji straty'
+        metric_id = 'Wartość funkcji straty dyskryminatora'
         if criterion is None:
             raise Exception("No criterion given, cannot calculate loss")
         self.calculated_metrics[metric_id] = criterion(discriminator_sample.targets, discriminator_sample.predictions).item()

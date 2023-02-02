@@ -59,7 +59,7 @@ class Logger:
 
     def log_discriminator_sample(self, discriminator_sample, description):
         struct_to_save = {
-            'images': discriminator_sample.images,
+            'iter_images': discriminator_sample.images,
             'targets': discriminator_sample.targets,
             'predictions': discriminator_sample.predictions
         }
@@ -67,7 +67,7 @@ class Logger:
 
     def log_generator_sample(self, generator_sample, description):
         struct_to_save = {
-            'images': generator_sample.images,
+            'iter_images': generator_sample.images,
             'outputs': generator_sample.discriminator_outputs
         }
         torch.save(struct_to_save, f"{self.dir}/generator_{description}.pt")

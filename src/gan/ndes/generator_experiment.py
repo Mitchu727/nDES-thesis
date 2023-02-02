@@ -11,7 +11,7 @@ from src.classic.utils import seed_everything, train_via_ndes_without_test_datas
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
-POPULATION = int(POPULATION_MULTIPLIER * 30000)
+POPULATION = int(POPULATION_MULTIPLIER * 35000)
 EPOCHS = int(POPULATION) * 100
 NDES_TRAINING = True
 

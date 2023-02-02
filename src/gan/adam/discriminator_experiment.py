@@ -85,7 +85,6 @@ if __name__ == "__main__":
         discriminator_error_real = []
         discriminator_error_fake = []
         error = []
-        discriminator_original = copy.deepcopy(discriminator)
         for i, batch in enumerate(merged_train_loader, 0):
             # Train with all-real batch
             discriminator_optimizer.zero_grad()

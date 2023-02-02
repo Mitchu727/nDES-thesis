@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import wandb
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
@@ -37,6 +36,7 @@ PRE_TRAINED_DISCRIMINATOR = False
 PRE_TRAINED_GENERATOR = False
 GENERATOR_TRAIN_IMAGES_NUMBER = 60000
 DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER = 10000
+
 
 def evaluate_discriminator(discriminator, test_loader, info):
     evaluation_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, test_loader)
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
             generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER , BATCH_NUM)
             generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
-            generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
+            generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 6, 1)
 
             # =====================================
             # DISCRIMINATOR TRAINING
