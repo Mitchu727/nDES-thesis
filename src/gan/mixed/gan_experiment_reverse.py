@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
         generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER, BATCH_NUM)
         generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
-        generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 24, 1)
+        generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 6, 1)
 
         # =====================================
         # DISCRIMINATOR TRAINING

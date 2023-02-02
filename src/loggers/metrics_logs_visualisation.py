@@ -13,17 +13,14 @@ if __name__ == "__main__":
     # ../gan/ndes/ndes_logs
     # log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/generator/ndes_59264.1894285/metrics_logs.csv")
 
-    # generator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/generator/good_v1/metrics_logs.csv")
-    # discriminator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/discriminator/good_v1/metrics_logs.csv")
+    generator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/generator/good_v1/metrics_logs.csv")
+    discriminator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/discriminator/good_v1/metrics_logs.csv")
 
     # generator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/generator/good_v1/metrics_logs.csv")
     # discriminator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/discriminator/good_v1/metrics_logs.csv")
-
-    generator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/generator/good_v1/metrics_logs.csv")
-    discriminator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/discriminator/good_v1/metrics_logs.csv")
-
-    # ax = log_df.plot(y=['error', 'discriminator real mean error', 'discriminator fake mean error'])
-    # ax.legend(['razem', 'próbki rzeczywiste', 'próbki fałszywe'])
+    #
+    # generator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/generator/good_v1/metrics_logs.csv")
+    # discriminator_log_df = pd.read_csv("../gan/mixed/mixed_logs/gan_reversed/discriminator/good_v1/metrics_logs.csv")
 
     # Minimalne wskazanie,Maksymalne wskazanie,Odchylenie standardowe,Funkcja straty
     ax = generator_log_df.plot(y=['Maksymalne wskazanie', 'Średnie wskazanie', 'Minimalne wskazanie'], legend=None)
@@ -44,16 +41,16 @@ if __name__ == "__main__":
     ax = generator_log_df.plot(y='Funkcja straty', legend=None)
     ax.xaxis.set_label_text("")
     plt.grid(True)
-    plt.title("Wartość funkcji straty dyskryminatora")
-    plt.savefig("metrics_images/discriminator_criterion.pdf")
+    plt.title("Wartość funkcji straty generatora")
+    plt.savefig("metrics_images/generator_criterion.pdf")
     plt.show()
 
     # ,Wartość funkcji straty,Średnia predykcja,Błąd dla próbek rzeczywistych,Błąd dla próbek fałszywych
     ax = discriminator_log_df.plot(y='Wartość funkcji straty', legend=None)
     ax.xaxis.set_label_text("")
     plt.grid(True)
-    plt.title("Wartość funkcji straty generatora")
-    plt.savefig("metrics_images/generator_criterion.pdf")
+    plt.title("Wartość funkcji straty dyskryminatora")
+    plt.savefig("metrics_images/discriminator_criterion.pdf")
     plt.show()
 
     ax = discriminator_log_df.plot(y='Średnia predykcja', legend=None)
