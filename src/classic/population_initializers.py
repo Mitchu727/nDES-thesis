@@ -92,8 +92,3 @@ class StartFromUniformPopulationInitializer(BasePopulationInitializer):
             self.xavier_mvn = XavierMVNPopulationInitializer(*self.args, **self.kwargs)
         # consecutive iterations
         return self.xavier_mvn.get_new_population(lower, upper)
-
-
-class SimpleMultivariateNormalGenerator:
-    def __init__(self, mean):
-        self.mean = mean

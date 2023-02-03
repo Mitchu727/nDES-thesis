@@ -136,8 +136,7 @@ class NDES:
         if not fitnesses and cols == 1:
             return self.worst_fitness
         return torch.tensor(
-            fitnesses + [self.worst_fitness] * (cols - budget_left), # FIXME uniknięcie zaburzania średniej
-            # fitnesses,
+            fitnesses + [self.worst_fitness] * (cols - budget_left),
             device=self.device,
             dtype=self.dtype,
         )
@@ -197,7 +196,7 @@ class NDES:
         print(f"Running nDES for a problem of size {self.problem_size}")
 
         # The best fitness found so far
-        self.best_fitness = self.worst_fitness #jakie jest w takim wypadku solution dla best_fitness, program wybucha
+        self.best_fitness = self.worst_fitness
         # The best solution found so far
         self.best_solution = None
         # The worst solution found so far
@@ -211,22 +210,8 @@ class NDES:
         )
 
         sorted_weights = torch.zeros_like(self.weights_pop)
-        #
-        # log_ = pd.DataFrame(
-        #     columns=[
-        #         "step",
-        #         "pc",
-        #         "mean_fitness",
-        #         "best_fitness",
-        #         "fn_cum",
-        #         "best_found",
-        #         "iter",
-        #     ]
-        # )
-
 
         #  evaluation_times = []
-        # self.iter_ = -1
         while self.count_eval < self.budget:  # and self.iter_ < self.max_iter:
 
             hist_head = -1
@@ -237,7 +222,7 @@ class NDES:
                 dtype=self.dtype,
                 device=self.cpu,
             )
-            self.Ft = self.initFt  # FIXME: czy ft jest gdzieś nadpisywane
+            self.Ft = self.initFt
             population = None
 
             gc.collect()
@@ -259,14 +244,12 @@ class NDES:
 
             new_mean = torch.empty_like(self.initial_value)
             new_mean.copy_(self.initial_value)
-            # FIXME-nit: maybe a deep copy initial value will go
             self.worst_fit = fitness.max().item()
 
             # Store population and selection means
             sorting_idx = fitness.argsort()
             sorted_weights_pop = self.weights_pop[sorting_idx]
-            #  FIXME-question: are these being sorted -> check
-            pop_mean = population.matmul(sorted_weights_pop)  # FIXME very big weights
+            pop_mean = population.matmul(sorted_weights_pop)
 
             if self.secondary_mutation == SecondaryMutation.RandomNoise:
                 chi_N = sqrt(self.problem_size)
@@ -276,7 +259,6 @@ class NDES:
             old_mean = torch.empty_like(new_mean)
             while self.count_eval < self.budget and not stoptol:
 
-                # iter_log = {}
                 torch.cuda.empty_cache()
                 gc.collect()
                 self.iter_ += 1
@@ -350,7 +332,7 @@ class NDES:
 
                 # Evaluation
                 #  start = timer()
-                fitness = self._fitness_lamarckian(population)  # FIXME:tutaj następuje ustawienie wszystkich fitnessów na 3.0
+                fitness = self._fitness_lamarckian(population)
                 #  end = timer()
                 #  evaluation_times.append(end - start)
                 if not self.lamarckism:
@@ -399,8 +381,6 @@ class NDES:
                     and self.count_eval < 0.8 * self.budget
                 ):
                     stoptol = True
-                # print(f"iter={self.iter_}")
-                # iter_log["best_found"] = self.best_fitness
                 self.logger.log_iter("best_found", self.best_fitness)
                 if self.iter_ % 50 == 0 and self.test_func is not None:
                     (test_loss, test_acc), self.best_solution = self.test_func(
@@ -409,18 +389,9 @@ class NDES:
                 else:
                     test_loss, test_acc = None, None
 
-                # iter_log["test_loss"] = test_loss
-                # iter_log["test_acc"] = test_acc
-                # self.logger.log_iter("test_loss", test_loss)
-                # self.logger.log_iter("test_acc", test_acc)
-                # log_ = pd.concat([log_, pd.DataFrame([iter_log])], ignore_index=True)
-                # if self.iter_ % 50 == 0:
-                #     log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
-                # wandb.log(iter_log)
                 self.logger.end_iter()
                 if self.iter_callback:
                     self.iter_callback()
 
-        # log_.to_csv(f"{self.log_dir}/ndes_log_{self.start}.csv")
         #  np.save(f"times_{self.problem_size}.npy", np.array(evaluation_times))
         return self.best_solution  # , log_

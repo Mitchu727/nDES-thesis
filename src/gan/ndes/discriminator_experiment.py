@@ -19,16 +19,12 @@ from src.loggers.logger import Logger
 POPULATION_MULTIPLIER = 1
 POPULATION = int(POPULATION_MULTIPLIER * 10000)
 EPOCHS = int(POPULATION) * 100
-NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
-BOOTSTRAP = False
 MODEL_NAME = "gan_ndes_discriminator"
-LOAD_WEIGHTS = False
 SEED_OFFSET = 0
 BATCH_SIZE = 64
 VALIDATION_SIZE = 10000
-STRATIFY = False
 PRE_TRAINED_DISCRIMINATOR = False
 PRE_TRAINED_GENERATOR = False
 FAKE_DATASET_SIZE = 60000
@@ -92,40 +88,31 @@ if __name__ == "__main__":
     original_discriminator = copy.deepcopy(discriminator)
 
     discriminator_output_manager = DiscriminatorOutputManager(criterion, logger)
+
     logger.start_training()
-    if LOAD_WEIGHTS:
-        raise Exception("Not yet implemented")
+    discriminator_ndes_optim = BasenDESOptimizer(
+        model=discriminator,
+        criterion=criterion,
+        data_gen=train_loader,
+        logger=logger,
+        use_fitness_ewma=False,
+        restarts=None,
+        lr=0.00001,
+        secondary_mutation=SecondaryMutation.RandomNoise,
+        **ndes_config
+    )
 
-    if NDES_TRAINING:
-        if STRATIFY:
-            raise Exception("Not yet implemented")
-        if BOOTSTRAP:
-            raise Exception("Not yet implemented")
-        discriminator_ndes_optim = BasenDESOptimizer(
-            model=discriminator,
-            criterion=criterion,
-            data_gen=train_loader,
-            logger=logger,
-            use_fitness_ewma=False,
-            restarts=None,
-            lr=0.00001,
-            secondary_mutation=SecondaryMutation.RandomNoise,
-            **ndes_config
-        )
+    evaluate_discriminator(discriminator, test_loader, "begin")
 
-        evaluate_discriminator(discriminator, test_loader, "begin")
+    vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
+    discriminator_output_manager.visualise(vis_sample, "/discriminator_begin.png")
 
-        vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
-        discriminator_output_manager.visualise(vis_sample, "/discriminator_begin.png")
+    train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
 
-        train_via_ndes_without_test_dataset(discriminator, discriminator_ndes_optim, DEVICE, MODEL_NAME)
+    evaluate_discriminator(discriminator, test_loader, "end")
 
-        evaluate_discriminator(discriminator, test_loader, "end")
-
-        vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
-        discriminator_output_manager.visualise(vis_sample, "/discriminator_end.png")
-    else:
-        raise Exception("Not yet implemented")
+    vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, visualisation_loader)
+    discriminator_output_manager.visualise(vis_sample, "/discriminator_end.png")
     logger.end_training()
 
 

@@ -11,17 +11,9 @@ from torchvision import datasets, transforms
 
 from src.classic.ndes_optimizer import BasenDESOptimizer
 from src.classic.ndes import SecondaryMutation
-from src.classic.population_initializers import XavierMVNPopulationInitializerV2
 from src.classic.utils import seed_everything, train_via_ndes, stratify
 
 from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
-#  EPOCHS = 25000
-# POPULATION_MULTIPLIER = 8
-# POPULATION = int(POPULATION_MULTIPLIER * 4000)
-# EPOCHS = int(POPULATION * 1200)
-import wandb
-
-#  EPOCHS = 25000
 from src.loggers.logger import Logger
 
 POPULATION_MULTIPLIER = 1
@@ -214,17 +206,14 @@ if __name__ == "__main__":
             model=model,
             criterion=criterion,
             data_gen=train_loader,
-            ndes_config=ndes_config,
             logger=logger,
             use_fitness_ewma=True,
             x_val=x_val,
             y_val=y_val,
             restarts=None,
-            # population_initializer=XavierMVNPopulationInitializerV2,
             lr=1,
             secondary_mutation=SecondaryMutation.Gradient,
-            lambda_=POPULATION,
-            device=DEVICE,
+            **ndes_config
         )
         train_via_ndes(model, ndes_optim, DEVICE, test_dataset, MODEL_NAME)
     else:

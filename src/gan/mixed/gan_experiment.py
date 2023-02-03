@@ -29,9 +29,7 @@ DISCRIMINATOR_NUM_EPOCHS = 1
 CYCLES = 25
 
 DEVICE = torch.device("cuda:0")
-BOOTSTRAP = False
 MODEL_NAME = "gan_mixed_experiment"
-LOAD_WEIGHTS = False
 SEED_OFFSET = 0
 BATCH_NUM = 600
 STRATIFY = False
@@ -110,123 +108,115 @@ if __name__ == "__main__":
 
     discriminator_logger.start_training()
     generator_logger.start_training()
-    if LOAD_WEIGHTS:
-        raise Exception("Not yet implemented")
 
-    if NDES_TRAINING:
-        if STRATIFY:
-            raise Exception("Not yet implemented")
-        if BOOTSTRAP:
-            raise Exception("Not yet implemented")
-        for cycle in range(CYCLES):
-            # =====================================
-            # NEW SETS CREATION
-            # =====================================
-            generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
-            train_data_fake = generated_fake_dataset.train_dataset
-            train_targets_fake = generated_fake_dataset.get_train_set_targets()
+    for cycle in range(CYCLES):
+        # =====================================
+        # NEW SETS CREATION
+        # =====================================
+        generated_fake_dataset = GeneratedFakeDataset(generator, number_of_samples, DISCRIMINATOR_GENERATED_TEST_IMAGES_NUMBER)
+        train_data_fake = generated_fake_dataset.train_dataset
+        train_targets_fake = generated_fake_dataset.get_train_set_targets()
 
-            # discriminator sets
+        # discriminator sets
 
-            discriminator_merged_train_loader = data.DataLoader(
-                TensorDataset(train_data_real, train_targets_real, train_data_fake, train_targets_fake), batch_size=256,
-                shuffle=True, drop_last=True, pin_memory=True, num_workers=4)
+        discriminator_merged_train_loader = data.DataLoader(
+            TensorDataset(train_data_real, train_targets_real, train_data_fake, train_targets_fake), batch_size=256,
+            shuffle=True, drop_last=True, pin_memory=True, num_workers=4)
 
-            discriminator_test_loader = create_merged_test_dataloader(fashionMNIST, generated_fake_dataset, 20000, DEVICE)
-            discriminator_visualisation_loader = create_discriminator_visualisation_dataloader(
-                fashionMNIST.get_random_from_test(12),
-                generated_fake_dataset.get_random_from_test(12)
-            )
+        discriminator_test_loader = create_merged_test_dataloader(fashionMNIST, generated_fake_dataset, 20000, DEVICE)
+        discriminator_visualisation_loader = create_discriminator_visualisation_dataloader(
+            fashionMNIST.get_random_from_test(12),
+            generated_fake_dataset.get_random_from_test(12)
+        )
 
-            # generator sets
+        # generator sets
 
-            generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER, BATCH_NUM)
-            generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
-            generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 6, 1)
+        generator_train_loader = ForGeneratorDataloader.for_generator(generator, GENERATOR_TRAIN_IMAGES_NUMBER, BATCH_NUM)
+        generator_test_loader = ForGeneratorDataloader.for_generator(generator, 10000, 1)
+        generator_visualisation_loader = ForGeneratorDataloader.for_generator(generator, 6, 1)
 
-            # =====================================
-            # DISCRIMINATOR TRAINING
-            # =====================================
-            evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
+        # =====================================
+        # DISCRIMINATOR TRAINING
+        # =====================================
+        evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
 
-            vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
-            discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_begin.png")
+        vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
+        discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_begin.png")
 
-            for epoch in range(DISCRIMINATOR_NUM_EPOCHS):
-                discriminator_real_acc = []
-                discriminator_fake_acc = []
-                discriminator_error_real = []
-                discriminator_error_fake = []
-                error = []
-                for i, batch in enumerate(discriminator_merged_train_loader, 0):
-                    # Train with all-real batch
-                    discriminator_optimizer.zero_grad()
-                    images_real = batch[0].to(DEVICE)
-                    label_real = batch[1].float().to(DEVICE)
-                    # Forward pass real batch through D
-                    output = discriminator(images_real).view(-1)
-                    # Calculate loss on all-real batch
-                    error_discriminator_real = discriminator_criterion(output, label_real)
-                    error_discriminator_real.backward()
-                    discriminator_error_real.append(error_discriminator_real.mean().item())
-                    discriminator_real_acc.append(output.mean().item())
-                    # for i, batch in enumerate(merged_train_loader, 0):
-                    fake_offset = 2
-                    fake_images = batch[fake_offset + 0].to(DEVICE)
-                    label_fake = batch[fake_offset + 1].float().to(DEVICE)
-                    # Classify all fake batch with Discriminator
-                    output = discriminator(fake_images).view(-1)
-                    # Calculate D's loss on the all-fake batch
-                    error_discriminator_fake = discriminator_criterion(output, label_fake)
-                    # Calculate the gradients for this batch, accumulated (summed) with previous gradients
-                    error_discriminator_fake.backward()
-                    discriminator_error_fake.append(error_discriminator_fake.mean().item())
-                    discriminator_fake_acc.append(output.mean().item())
-                    discriminator_optimizer.step()
+        for epoch in range(DISCRIMINATOR_NUM_EPOCHS):
+            discriminator_real_acc = []
+            discriminator_fake_acc = []
+            discriminator_error_real = []
+            discriminator_error_fake = []
+            error = []
+            for i, batch in enumerate(discriminator_merged_train_loader, 0):
+                # Train with all-real batch
+                discriminator_optimizer.zero_grad()
+                images_real = batch[0].to(DEVICE)
+                label_real = batch[1].float().to(DEVICE)
+                # Forward pass real batch through D
+                output = discriminator(images_real).view(-1)
+                # Calculate loss on all-real batch
+                error_discriminator_real = discriminator_criterion(output, label_real)
+                error_discriminator_real.backward()
+                discriminator_error_real.append(error_discriminator_real.mean().item())
+                discriminator_real_acc.append(output.mean().item())
+                # for i, batch in enumerate(merged_train_loader, 0):
+                fake_offset = 2
+                fake_images = batch[fake_offset + 0].to(DEVICE)
+                label_fake = batch[fake_offset + 1].float().to(DEVICE)
+                # Classify all fake batch with Discriminator
+                output = discriminator(fake_images).view(-1)
+                # Calculate D's loss on the all-fake batch
+                error_discriminator_fake = discriminator_criterion(output, label_fake)
+                # Calculate the gradients for this batch, accumulated (summed) with previous gradients
+                error_discriminator_fake.backward()
+                discriminator_error_fake.append(error_discriminator_fake.mean().item())
+                discriminator_fake_acc.append(output.mean().item())
+                discriminator_optimizer.step()
 
-                    # error = error_discriminator_fake + error_discriminator_real
-                    # error.append(error_discriminator_fake.mean().item() + error_discriminator_real.mean().item())
+                # error = error_discriminator_fake + error_discriminator_real
+                # error.append(error_discriminator_fake.mean().item() + error_discriminator_real.mean().item())
 
-                discriminator_logger.log_iter("iter", epoch)
-                discriminator_logger.log_iter("error", np.mean(discriminator_error_real + discriminator_error_fake))
-                discriminator_logger.log_iter("discriminator real mean error", np.mean(discriminator_error_real))
-                discriminator_logger.log_iter("discriminator fake mean error", np.mean(discriminator_error_fake))
-                discriminator_logger.end_iter()
+            discriminator_logger.log_iter("iter", epoch)
+            discriminator_logger.log_iter("error", np.mean(discriminator_error_real + discriminator_error_fake))
+            discriminator_logger.log_iter("discriminator real mean error", np.mean(discriminator_error_real))
+            discriminator_logger.log_iter("discriminator fake mean error", np.mean(discriminator_error_fake))
+            discriminator_logger.end_iter()
 
-            evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
+        evaluate_discriminator(discriminator, discriminator_test_loader, str(cycle))
 
-            vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
-            discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_end.png")
+        vis_sample = DiscriminatorSample.from_discriminator_and_loader(discriminator, discriminator_visualisation_loader)
+        discriminator_output_manager.visualise(vis_sample, f"/{cycle}_discriminator_end.png")
 
-            # =====================================
-            # GENERATOR TRAINING
-            # =====================================
+        # =====================================
+        # GENERATOR TRAINING
+        # =====================================
 
-            generator_criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
-            evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
+        generator_criterion = lambda out, targets: basic_generator_criterion(discriminator(out), targets.to(DEVICE))
+        evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
 
-            vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
-            generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_begin.png")
+        vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
+        generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_begin.png")
 
-            generator_ndes_optim = BasenDESOptimizer(
-                model=generator,
-                criterion=generator_criterion,
-                data_gen=generator_train_loader,
-                logger=generator_logger,
-                use_fitness_ewma=False,
-                restarts=None,
-                population_initializer=XavierMVNPopulationInitializerV2,
-                lr=0.00001,
-                secondary_mutation=SecondaryMutation.RandomNoise,
-                **generator_ndes_config
-            )
-            generator = train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
+        generator_ndes_optim = BasenDESOptimizer(
+            model=generator,
+            criterion=generator_criterion,
+            data_gen=generator_train_loader,
+            logger=generator_logger,
+            use_fitness_ewma=False,
+            restarts=None,
+            population_initializer=XavierMVNPopulationInitializerV2,
+            lr=0.00001,
+            secondary_mutation=SecondaryMutation.RandomNoise,
+            **generator_ndes_config
+        )
+        generator = train_via_ndes_without_test_dataset(generator, generator_ndes_optim, DEVICE, MODEL_NAME)
 
-            evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
+        evaluate_generator(generator, discriminator, generator_test_loader, str(cycle))
 
-            vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
-            generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_end.png")
-    else:
-        raise Exception("Not yet implemented")
+        vis_sample = GeneratorSample.sample_from_generator_and_loader(generator, discriminator, generator_visualisation_loader)
+        generator_output_manager.visualise(vis_sample, f"/{cycle}_generator_end.png")
+
     discriminator_logger.end_training()
     generator_logger.end_training()

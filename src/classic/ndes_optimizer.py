@@ -54,15 +54,15 @@ class BasenDESOptimizer:
         self.kwargs = kwargs
         self.restarts = restarts
         self.start = timer()
-        if restarts is not None and self.ndes_config.get("budget") is not None:
-            self.ndes_config["budget"] //= restarts
+        if restarts is not None and self.kwargs.get("budget") is not None:
+            self.kwargs["budget"] //= restarts
         self.initial_value = self.zip_layers(model.parameters())
         self.xavier_coeffs = self.calculate_xavier_coefficients(model.parameters())
         self.secondary_mutation = secondaryMutation
         self.lr = lr
         if use_fitness_ewma:
             self.ewma_logger = FitnessEWMALogger(data_gen, model, criterion)
-            self.ndes_config["iter_callback"] = self.ewma_logger.update_after_iteration
+            self.kwargs["iter_callback"] = self.ewma_logger.update_after_iteration
         self.logger.log_conf_kwargs(kwargs)
         self.log_config()
 
@@ -170,10 +170,7 @@ class BasenDESOptimizer:
             else:
                 val_test_func = None
             determined_config = {
-                # 'initial_value': best_value,
-                # 'fn': self._objective_function,
                 'xavier_coeffs': self.xavier_coeffs,
-                # 'population_initializer': population_initializer,
                 'test_func': val_test_func,
                 'secondary_mutation': self.secondary_mutation,
                 'lambda_': self.kwargs.get("lambda_")
@@ -181,24 +178,24 @@ class BasenDESOptimizer:
             self.kwargs = self.kwargs | determined_config
             # restarty w obecnej konfiguracji są none
             if self.restarts is not None:
-                pass
-                # for i in range(self.restarts):
-                    # self.kwargs["population_initializer"] = self.population_initializer(
-                    #     best_value, *population_initializer_args
-                    # )
-                    # ndes = NDES(log_id=i, **self.ndes_config)
-                    # best_value = ndes.run()
-                    # del ndes
-                    # if self.test_func is not None:
-                    #     self.test_model(best_value)
-                    # gc.collect()
-                    # torch.cuda.empty_cache()
+                for i in range(self.restarts):
+                    self.kwargs["population_initializer"] = self.population_initializer(
+                        initial_value=best_value,
+                        xavier_coeffs=self.xavier_coeffs,
+                        device=self.kwargs["device"],
+                        lambda_=self.kwargs.get("lambda_", None)
+                    )
+                    ndes = NDES(log_id=i, **self.kwargs)
+                    best_value = ndes.run()
+                    del ndes
+                    if self.test_func is not None:
+                        self.test_model(best_value)
+                    gc.collect()
+                    torch.cuda.empty_cache()
             else:
                 ndes = NDES(
                     initial_value=best_value,
                     fn=self._objective_function,
-                    # lower=self.ndes_config["lower"],
-                    # upper=self.ndes_config["upper"],
                     population_initializer=population_initializer,
                     logger=self.logger,
                     **self.kwargs)

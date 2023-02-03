@@ -87,7 +87,7 @@ if __name__ == "__main__":
         logger=logger,
         use_fitness_ewma=False,
         restarts=None,
-        lr=0.001,
+        lr=0.00001,
         secondary_mutation=SecondaryMutation.RandomNoise,
         lambda_=POPULATION,
         device=DEVICE,

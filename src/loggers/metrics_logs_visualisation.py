@@ -1,18 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# populacja 30000
-# generatory populacja
-# ndes_1746.6741294
-# ndes_20827.0899751 - pretrenowany
-#dyskriminator
-# ndes_12501.1691769 - pretrenowany
-# ndes_25790.0373033
-
 if __name__ == "__main__":
-    # ../gan/ndes/ndes_logs
-    # log_df = pd.read_csv("../gan/mixed/mixed_logs/gan/generator/ndes_59264.1894285/metrics_logs.csv")
-
     generator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/generator/good_v1/metrics_logs.csv")
     discriminator_log_df = pd.read_csv("../gan/ndes/ndes_logs/gan/discriminator/good_v1/metrics_logs.csv")
 
@@ -73,42 +62,3 @@ if __name__ == "__main__":
     plt.title("Błąd dla próbek fałszywych")
     plt.savefig("metrics_images/error_fake.pdf")
     plt.show()
-
-
-
-
-
-    # ax = log_df.plot(x='iter', y='best_fitness', legend=None)
-    # ax.xaxis.set_label_text("")
-    # plt.grid(True)
-    # plt.title("Najlepsze dopasowanie w populacji")
-    # plt.savefig("iter_images/best.png")
-    # plt.show()
-    #
-    # ax = log_df.plot(x='iter', y='best_found', legend=None)
-    # ax.xaxis.set_label_text("")
-    # plt.grid(True)
-    # plt.title("Dopasowanie najlepszego znalezionego osobnika w populacji")
-    # plt.savefig("iter_images/best_found.png")
-    # plt.show()
-    #
-    # ax = log_df.plot(x='iter', y='pc', legend=None)
-    # ax.xaxis.set_label_text("")
-    # plt.grid(True)
-    # plt.title("Pęd populacji")
-    # plt.savefig("iter_images/pd.png")
-    # plt.show()
-    #
-    # ax = log_df.plot(x='iter', y='step', legend=None)
-    # ax.xaxis.set_label_text("")
-    # plt.grid(True)
-    # plt.title("Wielkość kroku")
-    # plt.savefig("iter_images/step.png")
-    # plt.show()
-    #
-    # ax = log_df.plot(x='iter', y='fn_cum', legend=None)
-    # ax.xaxis.set_label_text("")
-    # plt.grid(True)
-    # plt.title("Wartość funkcji celu dla średniej populacji")
-    # plt.savefig("iter_images/fn_cum.png")
-    # plt.show()
