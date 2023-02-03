@@ -1,5 +1,3 @@
-from math import ceil
-
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -7,23 +5,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms
 
-from ndes_optimizer import BasenDESOptimizer
-from ndes import SecondaryMutation
-from utils import seed_everything, train_via_ndes
+from src.classic.ndes_optimizer import BasenDESOptimizer
+from src.classic.ndes import SecondaryMutation
+from src.classic.utils import seed_everything, train_via_ndes, stratify
 
-#  EPOCHS = 25000
-POPULATION_MULTIPLIER = 8
-POPULATION = int(POPULATION_MULTIPLIER * 4000)
-EPOCHS = int(POPULATION * 1200)
+from src.data_management.dataloaders.my_data_set_loader import MyDatasetLoader
+from src.loggers.logger import Logger
+
+POPULATION_MULTIPLIER = 1
+POPULATION = int(POPULATION_MULTIPLIER * 200)
+EPOCHS = int(POPULATION) * 500
 NDES_TRAINING = True
 
 DEVICE = torch.device("cuda:0")
 BOOTSTRAP = True
-MODEL_NAME = "fashion_ndes_bootstrapped"
+MODEL_NAME = "nDES-refactored"
 LOAD_WEIGHTS = False
 SEED_OFFSET = 0
 BATCH_SIZE = 64
@@ -116,6 +116,7 @@ class Net(pl.LightningModule):
         total = len(y)
 
         loss = F.nll_loss(y_hat, y)
+        self.log("val_loss", loss)
         return {"val_loss": loss, "correct": correct, "total": total}
 
     def test_step(self, batch, batch_idx):
@@ -143,45 +144,28 @@ class Net(pl.LightningModule):
         return result
 
 
+def get_early_stop_callback():
+    return EarlyStopping(
+        monitor="val_loss",
+        min_delta=0.00,
+        patience=3,
+        verbose=False,
+        mode="min"
+    )
+
+
 def cycle(loader):
     while True:
         for element in enumerate(loader):
             yield element
 
 
-class MyDatasetLoader:
-    def __init__(self, x_train, y_train, batch_size):
-        self.x_train = x_train
-        self.y_train = y_train
-        self.batch_size = batch_size
-        self.num_batches = int(ceil(x_train.shape[0] / batch_size))
-        self.i = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        i = self.i
-        idx = i * self.batch_size
-        self.i += 1
-        if i < self.num_batches - 1:
-            return i, (
-                self.x_train[idx : idx + self.batch_size],
-                self.y_train[idx : idx + self.batch_size],
-            )
-        elif i == self.num_batches - 1:
-            output = i, (self.x_train[idx:], self.y_train[idx:])
-            self.i = 0
-            return output
-
-    def __len__(self):
-        return self.num_batches
-
-
 if __name__ == "__main__":
+    logger = Logger("ndes_logs/", MODEL_NAME)
     seed_everything(SEED_OFFSET)
 
     model = Net().to(DEVICE)
+    logger.start_training()
     if LOAD_WEIGHTS:
         model.load_state_dict(torch.load(MODEL_NAME)["state_dict"])
 
@@ -190,67 +174,51 @@ if __name__ == "__main__":
         test_dataset = model.test_dataset
 
         if STRATIFY:
-            indices_x = []
-            indices_y = []
-            splitter = StratifiedKFold(
-                n_splits=ceil(len(x_train) / BATCH_SIZE),
-                # random_state=(42 + SEED_OFFSET),
-            )
-            reordering = [
-                i
-                for _, batch in splitter.split(
-                    np.arange(0, x_train.shape[0]), y_train.cpu().numpy()
-                )
-                for i in batch
-            ]
-            x_train = x_train[reordering, :]
-            y_train = y_train[reordering]
+            x_train, y_train = stratify(x_train, y_train, BATCH_SIZE)
 
         print(y_train.unique(return_counts=True))
 
         if BOOTSTRAP:
-            early_stop_callback = EarlyStopping(
-                monitor="val_loss",
-                min_delta=0.00,
-                patience=3,
-                verbose=False,
-                mode="min",
-            )
+            early_stop_callback = get_early_stop_callback()
             trainer = Trainer(gpus=1, callbacks=[early_stop_callback])
             trainer.fit(model)
             trainer.test(model)
-        print(f"Num params: {sum([param.nelement() for param in model.parameters()])}")
-        torch.save({"state_dict": model.state_dict()}, "boostrap_adam.pth.tar")
+            torch.save({"state_dict": model.state_dict()}, "boostrap_adam.pth.tar")
 
+        print(f"Num params: {sum([param.nelement() for param in model.parameters()])}")
+
+        ndes_config = {
+            'history': 16,
+            'worst_fitness': 3,
+            'Ft': 1,
+            'ccum': 0.96,
+            # 'cp': 0.1,
+            'lower': -2.0,
+            'upper': 2.0,
+            'log_dir': "ndes_logs/",
+            'tol': 1e-6,
+            'budget': EPOCHS,
+            'device': DEVICE
+        }
         criterion = nn.CrossEntropyLoss()
         train_loader = MyDatasetLoader(x_train, y_train, BATCH_SIZE)
         ndes_optim = BasenDESOptimizer(
             model=model,
             criterion=criterion,
             data_gen=train_loader,
+            logger=logger,
             use_fitness_ewma=True,
             x_val=x_val,
             y_val=y_val,
             restarts=None,
             lr=1,
             secondary_mutation=SecondaryMutation.Gradient,
-            Ft=1,
-            ccum=0.96,
-            # cp=0.1,
-            lower=-2.0,
-            upper=2.0,
-            budget=EPOCHS,
-            tol=1e-6,
-            lambda_=POPULATION,
-            history=16,
-            worst_fitness=3,
-            device=DEVICE,
+            **ndes_config
         )
         train_via_ndes(model, ndes_optim, DEVICE, test_dataset, MODEL_NAME)
     else:
-        early_stop_callback = EarlyStopping(
-            monitor="val_loss", min_delta=0.00, patience=3, verbose=False, mode="min"
-        )
+        early_stop_callback = get_early_stop_callback()
         trainer = Trainer(gpus=1, early_stop_callback=early_stop_callback)
         trainer.fit(model)
         trainer.test(model)
+    logger.end_training()

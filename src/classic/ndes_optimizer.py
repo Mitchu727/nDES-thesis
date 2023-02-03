@@ -1,58 +1,14 @@
-import gc
 from math import sqrt
 from timeit import default_timer as timer
 
-import cma
-import numpy as np
 import torch
 
-from ndes import NDES, SecondaryMutation
-from population_initializers import (
-    StartFromUniformPopulationInitializer,
-    XavierMVNPopulationInitializer,
+from src.classic.ndes import NDES, SecondaryMutation
+from src.classic.population_initializers import (
+    XavierMVNPopulationInitializer, XavierMVNPopulationInitializerV2,
 )
-from utils import seconds_to_human_readable
-
-
-class FitnessEWMALogger:
-    """Logger for the fitness values of data batches"""
-
-    def __init__(self, data_gen, model, criterion):
-        self.ewma_alpha = 1
-        self.iter_counter = 1
-        self.num_batches = len(data_gen)
-        self.ewma = torch.zeros(self.num_batches)
-        # FIXME
-        # sum of losses per batch for the current iteration
-        self.current_losses = torch.zeros(self.num_batches)
-        # count of evaluations per batch for the current iteration
-        self.current_counts = torch.zeros(self.num_batches)
-        self.set_initial_losses(data_gen, model, criterion)
-
-    def set_initial_losses(self, data_gen, model, criterion):
-        # XXX this is really ugly
-        for batch_idx, (b_x, y) in data_gen:
-            out = model(b_x)
-            loss = criterion(out, y).item()
-            self.ewma[batch_idx] = loss
-            if batch_idx >= self.num_batches - 1:
-                break
-
-    def update_batch(self, batch_idx, loss):
-        self.current_losses[batch_idx] += loss
-        self.current_counts[batch_idx] += 1
-        return loss - self.ewma[batch_idx]
-
-    def update_after_iteration(self):
-        self.ewma *= 1 - self.ewma_alpha
-        # calculate normal average for each batch and include it in the EWMA
-        self.ewma += self.ewma_alpha * (self.current_losses / self.current_counts)
-        # reset stats for the new iteration
-        self.current_losses = torch.zeros(self.num_batches)
-        # XXX ones to prevent 0 / 0
-        self.current_counts = torch.ones(self.num_batches)
-        self.ewma_alpha = 1 / (self.iter_counter ** (1 / 3))
-        self.iter_counter += 1
+from src.classic.utils import seconds_to_human_readable
+from src.classic.fitness_EWMA_logger import FitnessEWMALogger
 
 
 class BasenDESOptimizer:
@@ -60,17 +16,19 @@ class BasenDESOptimizer:
 
     def __init__(
         self,
-        model,
-        criterion,
-        data_gen,
-        x_val=None,
-        y_val=None,
-        use_fitness_ewma=False,
-        population_initializer=XavierMVNPopulationInitializer,
-        restarts=None,
-        lr=1e-3,
-        **kwargs,
-    ):
+            model: object,
+            criterion: object,
+            data_gen: object,
+            logger: object,
+            x_val: object = None,
+            y_val: object = None,
+            use_fitness_ewma: object = False,
+            population_initializer: object = XavierMVNPopulationInitializerV2,
+            restarts: object = None,
+            secondaryMutation=None,
+            lr: object = 1e-3,
+            **kwargs: object,
+    ) -> object:
         """
         Args:
             model: ``pytorch``'s model
@@ -89,6 +47,7 @@ class BasenDESOptimizer:
         self.criterion = criterion
         self.population_initializer = population_initializer
         self.data_gen = data_gen
+        self.logger = logger
         self.x_val = x_val
         self.y_val = y_val
         self.use_fitness_ewma = use_fitness_ewma
@@ -99,11 +58,21 @@ class BasenDESOptimizer:
             self.kwargs["budget"] //= restarts
         self.initial_value = self.zip_layers(model.parameters())
         self.xavier_coeffs = self.calculate_xavier_coefficients(model.parameters())
-        self.secondary_mutation = kwargs.get("secondary_mutation", None)
+        self.secondary_mutation = secondaryMutation
         self.lr = lr
         if use_fitness_ewma:
             self.ewma_logger = FitnessEWMALogger(data_gen, model, criterion)
             self.kwargs["iter_callback"] = self.ewma_logger.update_after_iteration
+        self.logger.log_conf_kwargs(kwargs)
+        self.log_config()
+
+
+    def log_config(self):
+        self.logger.log_conf("criterion", self.criterion)
+        self.logger.log_conf("secondary_mutation", self.secondary_mutation)
+        self.logger.log_conf("use_fitness_ewma", self.use_fitness_ewma)
+        self.logger.log_conf("population_initializer", self.population_initializer)
+        self.logger.log_conf("lr", self.lr)
 
     def zip_layers(self, layers_iter):
         """Concatenate flattened layers into a single 1-D tensor.
@@ -124,6 +93,17 @@ class BasenDESOptimizer:
             tensors.append(tmp)
         return torch.cat(tensors, 0).contiguous()
 
+    def unzip_layers(self, zipped_layers):
+        """Iterator over 'unzipped' layers, with their proper shapes.
+
+        Args:
+            zipped_layers: Flattened representation of layers.
+        """
+        start = 0
+        for offset, shape in self._layers_offsets_shapes:
+            yield zipped_layers[start:offset].view(shape)
+            start = offset
+
     @staticmethod
     def calculate_xavier_coefficients(layers_iter):
         xavier_coeffs = []
@@ -138,16 +118,8 @@ class BasenDESOptimizer:
                 xavier_coeffs.extend([xavier_coeffs[-1]] * param_num_elements)
         return torch.tensor(xavier_coeffs)
 
-    def unzip_layers(self, zipped_layers):
-        """Iterator over 'unzipped' layers, with their proper shapes.
-
-        Args:
-            zipped_layers: Flattened representation of layers.
-        """
-        start = 0
-        for offset, shape in self._layers_offsets_shapes:
-            yield zipped_layers[start:offset].view(shape)
-            start = offset
+    def set_new_data_gen(self, loader):
+        self.data_gen = loader
 
     # @profile
     def _objective_function(self, weights):
@@ -168,8 +140,8 @@ class BasenDESOptimizer:
                 weights -= self.lr * gradient
         else:
             out = self.model(b_x)
-            loss = self.criterion(out, y)
-        loss = loss.item()
+            loss = self.criterion(out, y).item()
+        # print(f"Loss: {loss}")
         if self.use_fitness_ewma:
             return self.ewma_logger.update_batch(batch_idx, loss)
         return loss
@@ -187,31 +159,31 @@ class BasenDESOptimizer:
             requires_grad = self.secondary_mutation == SecondaryMutation.Gradient
             for param in self.model.parameters():
                 param.requires_grad = requires_grad
-            population_initializer_args = [
-                self.xavier_coeffs,
-                self.kwargs["device"],
-                self.kwargs.get("lambda_", None),
-            ]
             population_initializer = self.population_initializer(
-                best_value, *population_initializer_args
+                initial_value=best_value,
+                xavier_coeffs=self.xavier_coeffs,
+                device=self.kwargs["device"],
+                lambda_=self.kwargs.get("lambda_", None)
             )
             if self.x_val is not None:
-                test_func = self.validate_and_test
+                val_test_func = self.validate_and_test
             else:
-                test_func = None
-            self.kwargs.update(
-                dict(
-                    initial_value=best_value,
-                    fn=self._objective_function,
-                    xavier_coeffs=self.xavier_coeffs,
-                    population_initializer=population_initializer,
-                    test_func=test_func,
-                )
-            )
+                val_test_func = None
+            determined_config = {
+                'xavier_coeffs': self.xavier_coeffs,
+                'test_func': val_test_func,
+                'secondary_mutation': self.secondary_mutation,
+                'lambda_': self.kwargs.get("lambda_")
+            }
+            self.kwargs = self.kwargs | determined_config
+            # restarty w obecnej konfiguracji są none
             if self.restarts is not None:
                 for i in range(self.restarts):
                     self.kwargs["population_initializer"] = self.population_initializer(
-                        best_value, *population_initializer_args
+                        initial_value=best_value,
+                        xavier_coeffs=self.xavier_coeffs,
+                        device=self.kwargs["device"],
+                        lambda_=self.kwargs.get("lambda_", None)
                     )
                     ndes = NDES(log_id=i, **self.kwargs)
                     best_value = ndes.run()
@@ -221,7 +193,12 @@ class BasenDESOptimizer:
                     gc.collect()
                     torch.cuda.empty_cache()
             else:
-                ndes = NDES(**self.kwargs)
+                ndes = NDES(
+                    initial_value=best_value,
+                    fn=self._objective_function,
+                    population_initializer=population_initializer,
+                    logger=self.logger,
+                    **self.kwargs)
                 best_value = ndes.run()
             self._reweight_model(best_value)
             return self.model
@@ -256,52 +233,7 @@ class BasenDESOptimizer:
         return population[:, best_idx].clone()
 
     def validate_and_test(self, population):
+        # walidacyjny dataset
         best_individual = self.find_best(population)
+        # testowy dataset
         return self.test_model(best_individual), best_individual
-
-
-class RNNnDESOptimizer(BasenDESOptimizer):
-    """nDES optimizer for RNNs, uses different initialization strategy than base
-    optimizer."""
-
-    def __init__(
-        self,
-        *args,
-        population_initializer=StartFromUniformPopulationInitializer,
-        secondary_mutation=SecondaryMutation.RandomNoise,
-        **kwargs,
-    ):
-        super().__init__(
-            *args,
-            population_initializer=population_initializer,
-            secondary_mutation=secondary_mutation,
-            **kwargs,
-        )
-
-    def calculate_xavier_coefficients(self, layers_iter):
-        return torch.ones_like(self.initial_value) * 0.4
-
-
-class CMAESOptimizerRNN:
-    def __init__(self, model, criterion, data_gen, restarts=None, **kwargs):
-        self.model = model
-        self.criterion = criterion
-        self.data_gen = data_gen
-
-    def _objective_function(self, weights):
-        """Custom objective function for the DES optimizer."""
-        self.model.set_weights(weights)
-        _, (x_data, y_data) = next(self.data_gen)
-        predicted = np.array([self.model.forward(x) for x in x_data])
-        loss = self.criterion(y_data, predicted)
-        return loss
-
-    def run(self, test_func=None):
-        """Optimize model's weights wrt. the given criterion.
-
-        Returns:
-            Optimized model.
-        """
-        es = cma.CMAEvolutionStrategy(11 * [0], 1.5, {"verb_disp": 1, "maxiter": 1000})
-        es.optimize(self._objective_function)
-        return es.best.get()[0]

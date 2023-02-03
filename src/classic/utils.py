@@ -6,12 +6,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from math import ceil
+from sklearn.model_selection import StratifiedKFold
+from sklearn.utils import shuffle
 from gpu_utils import bounce_back_boundary_2d as bounce_back_boundary_2d_cuda
 
 
 def create_directory(directory: str) -> None:
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def count_model_parameters(model) -> int:
+    return sum(p.numel() for p in model.parameters())
 
 
 def seed_everything(offset=0):
@@ -114,7 +121,17 @@ def train_via_ndes(model, ndes, device, test_dataset, model_name):
 
     model = ndes.run(lambda x: test(x, device, test_loader))
     test(model, device, test_loader)
-    torch.save({"state_dict": model.state_dict()}, f"{model_name}_{ndes.start}.pth.tar")
+    torch.save({"state_dict": model.state_dict()}, f"models/{model_name}_{ndes.start}.pth.tar")
+
+
+def train_via_ndes_without_test_dataset(model, ndes, device, model_name):
+    model.eval()
+
+    model = ndes.run()
+    # test(model, device, test_loader)
+    create_directory("models")
+    torch.save({"state_dict": model.state_dict()}, f"models/{model_name}_{ndes.start}.pth.tar")
+    return model
 
 
 def train_via_gradient(
@@ -161,3 +178,25 @@ def bounce_back_boundary_2d(x, lower, upper):
     upper = upper[0]
     delta = upper - lower
     return bounce_back_boundary_2d_cuda(x, lower, upper, delta)
+
+
+def shuffle_dataset(data, targets):
+    shuffled_data, shuffled_targets = shuffle(data, targets)
+    return shuffled_data, shuffled_targets
+
+
+def stratify(x_train, y_train, batch_size):
+    splitter = StratifiedKFold(
+        n_splits=ceil(len(x_train) / batch_size),
+        # random_state=(42 + SEED_OFFSET),
+    )
+    reordering = [
+        i
+        for _, batch in splitter.split(
+            np.arange(0, x_train.shape[0]), y_train.cpu().numpy()
+        )
+        for i in batch
+    ]
+    x_train = x_train[reordering, :]
+    y_train = y_train[reordering]
+    return x_train, y_train

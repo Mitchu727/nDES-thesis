@@ -2,7 +2,7 @@ import torch
 from torch.distributions import MultivariateNormal, Uniform
 from abc import ABC, abstractmethod
 
-from utils import bounce_back_boundary_2d
+from src.classic.utils import bounce_back_boundary_2d
 
 
 class BasePopulationInitializer(ABC):
@@ -24,7 +24,6 @@ class BasePopulationInitializer(ABC):
 class XavierMVNPopulationInitializer(BasePopulationInitializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         sd = torch.eye(self.lambda_, device=self.device).cpu()
         mean = (
             torch.zeros_like(self.initial_value)
@@ -37,6 +36,26 @@ class XavierMVNPopulationInitializer(BasePopulationInitializer):
     def get_new_population(self, lower, upper):
         population = self.normal.sample().to(self.device)
         population *= self.xavier_coeffs[:, None]
+        self.initial_value = self.initial_value.cuda()
+        population += self.initial_value[:, None]
+        population[:, 0] = self.initial_value
+        return bounce_back_boundary_2d(population, lower, upper)
+
+class XavierMVNPopulationInitializerV2(BasePopulationInitializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        sd = torch.eye(1, device=self.device).cpu()
+        mean = (
+            torch.zeros_like(self.initial_value)
+            .unsqueeze(1)
+            .cpu()
+        )
+        self.normal = MultivariateNormal(mean, sd)
+
+    def get_new_population(self, lower, upper):
+        population = self.normal.sample((self.lambda_,)).squeeze().T.contiguous().to(self.device)
+        population *= self.xavier_coeffs[:, None]
+        self.initial_value = self.initial_value.cuda()
         population += self.initial_value[:, None]
         population[:, 0] = self.initial_value
         return bounce_back_boundary_2d(population, lower, upper)
